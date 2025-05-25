@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+.env
+*.sqlite
+*.db
+client/build/
+pdfs/
