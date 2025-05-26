@@ -349,6 +349,34 @@ node utils/init-db.js
 ### API Errors
 Check the server logs for detailed error messages. Most API errors will be logged to the console.
 
+## UI/UX Features
+
+### Responsive Design
+
+The 3DQ application is designed to be responsive and work well on both desktop and mobile devices. Key responsive features include:
+
+#### Collapsible Sidebar
+- The sidebar can be toggled open/closed on all screen sizes
+- Automatically collapses on mobile devices to maximize content space
+- Remembers state when manually closed on desktop
+- Toggle button in the top bar for easy access
+
+#### Adaptive Layouts
+- Tables adjust for mobile viewing with horizontal scrolling
+- Text truncation with ellipsis for longer content on small screens
+- Form layouts adapt to screen size (stacked on mobile, side-by-side on desktop)
+- Proper spacing and alignment on all screen sizes
+
+#### Navigation
+- Quick Quote accessible as the first item in the sidebar menu
+- Quotes page remains as the default landing page
+- Consistent button placement across all management pages
+
+### Theme and Styling
+- Dark mode UI with customizable accent color
+- Material UI components for consistent look and feel
+- Print-friendly invoice templates
+
 ## Frontend Development
 
 ### Making and Applying Changes
