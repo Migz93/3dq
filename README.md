@@ -10,7 +10,7 @@
 - **Quote Builder**: Create detailed quotes with a step-by-step process
 - **Quick Quote**: Generate fast quotes with minimal inputs
 - **Quote History**: View and manage all past quotes
-- **PDF Export**: Generate client-friendly or detailed internal invoices
+- **HTML Invoices**: Generate client-friendly or detailed internal invoices with print functionality
 - **Historical Accuracy**: Quotes maintain their original values even when settings change
 
 ### Resource Management
@@ -21,6 +21,7 @@
 ### Settings & Configuration
 - **Global Settings**: Configure electricity costs, labor rates, default markup percentage
 - **Currency Settings**: Set your preferred currency symbol
+- **Company Branding**: Set your company name for invoices (default: "Prints Inc")
 - **Quote Numbering**: Automatic sequential quote number generation (e.g., 3DQ0001)
 - **UI Customization**: Set accent color for the application
 
@@ -104,7 +105,7 @@ For detailed installation instructions, see the [Technical README](TECHNICAL_REA
 5. Configure print setup (print time, electricity usage)
 6. Add labor costs
 7. Review the cost summary and adjust markup if needed
-8. Save the quote and generate a PDF if required
+8. Save the quote and generate an invoice if required
 
 #### Using Quick Quote
 1. Navigate to the Quotes page and click "Quick Quote"
@@ -116,7 +117,7 @@ For detailed installation instructions, see the [Technical README](TECHNICAL_REA
 All your data is stored locally:
 
 - **Database**: Contains all your filaments, printers, hardware, quotes, and settings
-- **Generated PDFs**: Saved in the quotes directory for easy access
+- **Quote Data**: All quote information is stored in the database for easy access and invoice generation
 
 ## Troubleshooting
 

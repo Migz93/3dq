@@ -100,6 +100,7 @@ function App() {
                   <Route path="/hardware" element={<HardwarePage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/quote/new" element={<QuoteBuilder />} />
+                  <Route path="/quote/edit/:id" element={<QuoteBuilder />} />
                   <Route path="/quote/quick" element={<QuickQuote />} />
                   <Route path="/quote/:id" element={<ViewQuote />} />
                 </Routes>

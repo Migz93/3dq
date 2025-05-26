@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const pdf = require('html-pdf');
 const fs = require('fs');
 
 // Export a function that accepts a database instance
@@ -46,6 +45,173 @@ router.get('/:id', (req, res) => {
       hardware,
       printSetup,
       labour
+    };
+    
+    res.json(quoteData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update an existing quote
+router.put('/:id', (req, res) => {
+  try {
+    const {
+      title,
+      customer_name,
+      date,
+      notes,
+      markup_percent,
+      total_cost,
+      is_quick_quote,
+      filaments,
+      hardware,
+      printSetup,
+      labour
+    } = req.body;
+    
+    // Validate required fields
+    if (!customer_name || !date || markup_percent === undefined || total_cost === undefined) {
+      return res.status(400).json({ error: 'Please provide all required fields' });
+    }
+    
+    // Check if quote exists
+    const existingQuote = db.prepare('SELECT * FROM quotes WHERE id = ?').get(req.params.id);
+    if (!existingQuote) {
+      return res.status(404).json({ error: 'Quote not found' });
+    }
+    
+    // Start a transaction
+    db.transaction(() => {
+      // Update quote
+      const quoteStmt = db.prepare(`
+        UPDATE quotes SET
+          title = ?,
+          customer_name = ?,
+          date = ?,
+          notes = ?,
+          markup_percent = ?,
+          total_cost = ?,
+          is_quick_quote = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `);
+      
+      quoteStmt.run(
+        title || existingQuote.title,
+        customer_name,
+        date,
+        notes || null,
+        markup_percent,
+        total_cost,
+        is_quick_quote || 0,
+        req.params.id
+      );
+      
+      // Delete existing related data
+      db.prepare('DELETE FROM quote_filaments WHERE quote_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM quote_hardware WHERE quote_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM quote_print_setup WHERE quote_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM quote_labour WHERE quote_id = ?').run(req.params.id);
+      
+      // Re-insert filaments
+      if (filaments && filaments.length > 0) {
+        const filamentStmt = db.prepare(`
+          INSERT INTO quote_filaments (
+            quote_id, filament_id, filament_name, filament_price_per_gram,
+            grams_used, total_cost
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        
+        filaments.forEach(filament => {
+          filamentStmt.run(
+            req.params.id,
+            filament.filament_id,
+            filament.filament_name,
+            filament.filament_price_per_gram,
+            filament.grams_used,
+            filament.total_cost
+          );
+        });
+      }
+      
+      // Re-insert hardware
+      if (hardware && hardware.length > 0) {
+        const hardwareStmt = db.prepare(`
+          INSERT INTO quote_hardware (
+            quote_id, hardware_id, hardware_name, quantity,
+            unit_price, total_cost
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        
+        hardware.forEach(item => {
+          hardwareStmt.run(
+            req.params.id,
+            item.hardware_id,
+            item.hardware_name,
+            item.quantity,
+            item.unit_price,
+            item.total_cost
+          );
+        });
+      }
+      
+      // Re-insert print setup
+      if (printSetup) {
+        const printSetupStmt = db.prepare(`
+          INSERT INTO quote_print_setup (
+            quote_id, printer_id, printer_name, print_time,
+            power_cost, depreciation_cost
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        
+        printSetupStmt.run(
+          req.params.id,
+          printSetup.printer_id,
+          printSetup.printer_name,
+          printSetup.print_time,
+          printSetup.power_cost,
+          printSetup.depreciation_cost
+        );
+      }
+      
+      // Re-insert labour
+      if (labour) {
+        const labourStmt = db.prepare(`
+          INSERT INTO quote_labour (
+            quote_id, design_minutes, preparation_minutes,
+            post_processing_minutes, other_minutes,
+            labour_rate_per_hour, total_cost
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        labourStmt.run(
+          req.params.id,
+          labour.design_minutes,
+          labour.preparation_minutes,
+          labour.post_processing_minutes,
+          labour.other_minutes,
+          labour.labour_rate_per_hour,
+          labour.total_cost
+        );
+      }
+    })();
+    
+    // Get updated quote with all related data
+    const updatedQuote = db.prepare('SELECT * FROM quotes WHERE id = ?').get(req.params.id);
+    const updatedFilaments = db.prepare('SELECT * FROM quote_filaments WHERE quote_id = ?').all(req.params.id);
+    const updatedHardware = db.prepare('SELECT * FROM quote_hardware WHERE quote_id = ?').all(req.params.id);
+    const updatedPrintSetup = db.prepare('SELECT * FROM quote_print_setup WHERE quote_id = ?').get(req.params.id);
+    const updatedLabour = db.prepare('SELECT * FROM quote_labour WHERE quote_id = ?').get(req.params.id);
+    
+    // Combine all data
+    const quoteData = {
+      ...updatedQuote,
+      filaments: updatedFilaments,
+      hardware: updatedHardware,
+      printSetup: updatedPrintSetup,
+      labour: updatedLabour
     };
     
     res.json(quoteData);
@@ -390,14 +556,14 @@ router.delete('/:id', (req, res) => {
   }
 });
 
-// Generate PDF for a quote
-router.get('/:id/pdf/:type', (req, res) => {
+// Generate HTML invoice for a quote
+router.get('/:id/invoice/:type', (req, res) => {
   try {
     const quoteId = req.params.id;
-    const pdfType = req.params.type; // 'internal' or 'client'
+    const invoiceType = req.params.type; // 'internal' or 'client'
     
-    if (pdfType !== 'internal' && pdfType !== 'client') {
-      return res.status(400).json({ error: 'Invalid PDF type. Must be "internal" or "client"' });
+    if (invoiceType !== 'internal' && invoiceType !== 'client') {
+      return res.status(400).json({ error: 'Invalid invoice type. Must be "internal" or "client"' });
     }
     
     // Get quote with all related data
@@ -412,59 +578,38 @@ router.get('/:id/pdf/:type', (req, res) => {
     const printSetup = db.prepare('SELECT * FROM quote_print_setup WHERE quote_id = ?').get(quoteId);
     const labour = db.prepare('SELECT * FROM quote_labour WHERE quote_id = ?').get(quoteId);
     
-    // Get currency symbol from settings
+    // Get currency symbol and company name from settings
     let currency = '£'; // Default currency symbol (£)
+    let companyName = 'Prints Inc'; // Default company name
     try {
       const currencySetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('currency_symbol');
       if (currencySetting && currencySetting.value) {
         currency = currencySetting.value;
       }
+      
+      const companyNameSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('company_name');
+      if (companyNameSetting && companyNameSetting.value) {
+        companyName = companyNameSetting.value;
+      }
     } catch (error) {
-      console.warn('Could not get currency_symbol setting, using default:', error);
+      console.warn('Could not get settings, using defaults:', error);
     }
     
-    // Generate HTML for PDF
+    // Generate HTML for invoice
     let html = '';
     
-    if (pdfType === 'internal') {
+    if (invoiceType === 'internal') {
       // Internal invoice with detailed breakdown
-      html = generateInternalInvoiceHtml(quote, filaments, hardware, printSetup, labour, currency);
+      html = generateInternalInvoiceHtml(quote, filaments, hardware, printSetup, labour, currency, companyName);
     } else {
       // Client invoice with simplified view
-      html = generateClientInvoiceHtml(quote, filaments, hardware, printSetup, labour, currency);
+      html = generateClientInvoiceHtml(quote, filaments, hardware, printSetup, labour, currency, companyName);
     }
     
-    // Generate PDF
-    const options = {
-      format: 'A4',
-      border: {
-        top: '1cm',
-        right: '1cm',
-        bottom: '1cm',
-        left: '1cm'
-      }
-    };
-    
-    // Get the quotes directory path (for Docker compatibility)
-    const CONFIG_DIR = process.env.CONFIG_DIR || path.join(__dirname, '..', 'config');
-    const QUOTES_DIR = path.join(CONFIG_DIR, 'quotes');
-    
-    // Create directory for PDFs if it doesn't exist
-    if (!fs.existsSync(QUOTES_DIR)) {
-      fs.mkdirSync(QUOTES_DIR, { recursive: true });
-    }
-    
-    const pdfPath = path.join(QUOTES_DIR, `quote_${quoteId}_${pdfType}.pdf`);
-    
-    pdf.create(html, options).toFile(pdfPath, (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Error generating PDF' });
-      }
-      
-      // Send PDF file
-      res.sendFile(result.filename);
-    });
+    // Instead of generating a PDF, just return the HTML directly
+    // This avoids the issues with the PDF generation library
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
@@ -472,7 +617,7 @@ router.get('/:id/pdf/:type', (req, res) => {
 });
 
 // Helper function to generate internal invoice HTML
-function generateInternalInvoiceHtml(quote, filaments, hardware, printSetup, labour, currency) {
+function generateInternalInvoiceHtml(quote, filaments, hardware, printSetup, labour, currency, companyName) {
   // Calculate totals
   const filamentTotal = filaments.reduce((sum, f) => sum + f.total_cost, 0);
   const hardwareTotal = hardware.reduce((sum, h) => sum + h.total_cost, 0);
@@ -490,19 +635,103 @@ function generateInternalInvoiceHtml(quote, filaments, hardware, printSetup, lab
       <meta charset="utf-8">
       <title>Internal Invoice - ${quote.title}</title>
       <style>
-        body { font-family: Arial, sans-serif; color: #333; }
-        .invoice-header { text-align: center; margin-bottom: 30px; }
-        .invoice-details { margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f2f2f2; }
-        .total-row { font-weight: bold; }
-        .section-title { margin-top: 20px; margin-bottom: 10px; }
+        @media print {
+          .no-print { display: none !important; }
+          @page { margin: 1.5cm; }
+        }
+        body { 
+          font-family: 'Segoe UI', Arial, sans-serif; 
+          color: #333; 
+          line-height: 1.6;
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px;
+          background-color: #f9f9f9;
+        }
+        .container {
+          background-color: white;
+          padding: 40px;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .invoice-header { 
+          text-align: center; 
+          margin-bottom: 30px; 
+          padding-bottom: 20px;
+          border-bottom: 2px solid #3498db;
+        }
+        .invoice-header h1 {
+          color: #3498db;
+          margin-bottom: 5px;
+        }
+        .invoice-details { 
+          margin-bottom: 30px; 
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+        table { 
+          width: 100%; 
+          border-collapse: collapse; 
+          margin-bottom: 30px; 
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        th, td { 
+          padding: 12px 15px; 
+          text-align: left; 
+          border-bottom: 1px solid #eee; 
+        }
+        th { 
+          background-color: #3498db; 
+          color: white;
+          font-weight: 500;
+        }
+        tr:nth-child(even) { background-color: #f8f8f8; }
+        tr:hover { background-color: #f1f1f1; }
+        .total-row { 
+          font-weight: bold; 
+          background-color: #f0f7ff !important;
+        }
+        .total-row td {
+          border-top: 2px solid #3498db;
+        }
+        .section-title { 
+          margin-top: 30px; 
+          margin-bottom: 15px; 
+          color: #3498db;
+          border-left: 4px solid #3498db;
+          padding-left: 10px;
+        }
+        .print-button {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background-color: #3498db;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 16px;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+          transition: all 0.3s ease;
+        }
+        .print-button:hover {
+          background-color: #2980b9;
+        }
+        .cost-summary {
+          background-color: #f0f7ff;
+          border-radius: 4px;
+          padding: 20px;
+          border-left: 4px solid #3498db;
+        }
       </style>
     </head>
     <body>
+      <button onclick="window.print()" class="print-button no-print">Print Invoice</button>
+      <div class="container">
       <div class="invoice-header">
-        <h1>3DQ - Internal Invoice</h1>
+        <h1>${companyName} - Internal Invoice</h1>
         <h2>${quote.title}</h2>
       </div>
       
@@ -628,49 +857,56 @@ function generateInternalInvoiceHtml(quote, filaments, hardware, printSetup, lab
       ` : ''}
       
       <h3 class="section-title">Cost Summary</h3>
-      <table>
-        <tbody>
-          <tr>
-            <td>Filament Cost</td>
-            <td>${currency}${formatCost(filamentTotal)}</td>
-          </tr>
-          <tr>
-            <td>Hardware Cost</td>
-            <td>${currency}${formatCost(hardwareTotal)}</td>
-          </tr>
-          <tr>
-            <td>Power Cost</td>
-            <td>${currency}${formatCost(powerCost)}</td>
-          </tr>
-          <tr>
-            <td>Depreciation</td>
-            <td>${currency}${formatCost(depreciationCost)}</td>
-          </tr>
-          <tr>
-            <td>Labour Cost</td>
-            <td>${currency}${formatCost(labourCost)}</td>
-          </tr>
-          <tr>
-            <td>Subtotal</td>
-            <td>${currency}${formatCost(filamentTotal + hardwareTotal + powerCost + depreciationCost + labourCost)}</td>
-          </tr>
-          <tr>
-            <td>Markup (${quote.markup_percent}%)</td>
-            <td>${currency}${formatCost((filamentTotal + hardwareTotal + powerCost + depreciationCost + labourCost) * (quote.markup_percent / 100))}</td>
-          </tr>
-          <tr class="total-row">
-            <td>Total</td>
-            <td>${currency}${formatCost(quote.total_cost)}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="cost-summary">
+        <table>
+          <tbody>
+            <tr>
+              <td>Filament Cost</td>
+              <td>${currency}${formatCost(filamentTotal)}</td>
+            </tr>
+            <tr>
+              <td>Hardware Cost</td>
+              <td>${currency}${formatCost(hardwareTotal)}</td>
+            </tr>
+            <tr>
+              <td>Power Cost</td>
+              <td>${currency}${formatCost(powerCost)}</td>
+            </tr>
+            <tr>
+              <td>Depreciation</td>
+              <td>${currency}${formatCost(depreciationCost)}</td>
+            </tr>
+            <tr>
+              <td>Labour Cost</td>
+              <td>${currency}${formatCost(labourCost)}</td>
+            </tr>
+            <tr>
+              <td>Subtotal</td>
+              <td>${currency}${formatCost(filamentTotal + hardwareTotal + powerCost + depreciationCost + labourCost)}</td>
+            </tr>
+            <tr>
+              <td>Markup (${quote.markup_percent}%)</td>
+              <td>${currency}${formatCost((filamentTotal + hardwareTotal + powerCost + depreciationCost + labourCost) * (quote.markup_percent / 100))}</td>
+            </tr>
+            <tr class="total-row">
+              <td>Total</td>
+              <td>${currency}${formatCost(quote.total_cost)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div style="margin-top: 50px; text-align: center; color: #777; padding-top: 20px; border-top: 1px solid #eee;">
+        <p>This is an internal invoice generated by ${companyName}</p>
+      </div>
+    </div> <!-- End of container -->
     </body>
     </html>
   `;
 }
 
 // Helper function to generate client invoice HTML
-function generateClientInvoiceHtml(quote, filaments, hardware, printSetup, labour, currency) {
+function generateClientInvoiceHtml(quote, filaments, hardware, printSetup, labour, currency, companyName) {
   // Calculate totals
   const filamentTotal = filaments.reduce((sum, f) => sum + f.total_cost, 0);
   const hardwareTotal = hardware.reduce((sum, h) => sum + h.total_cost, 0);
@@ -692,55 +928,178 @@ function generateClientInvoiceHtml(quote, filaments, hardware, printSetup, labou
       <meta charset="utf-8">
       <title>Invoice - ${quote.title}</title>
       <style>
-        body { font-family: Arial, sans-serif; color: #333; }
-        .invoice-header { text-align: center; margin-bottom: 30px; }
-        .invoice-details { margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f2f2f2; }
-        .total-row { font-weight: bold; }
-        .section-title { margin-top: 20px; margin-bottom: 10px; }
+        @media print {
+          .no-print { display: none !important; }
+          @page { margin: 1.5cm; }
+        }
+        body { 
+          font-family: 'Segoe UI', Arial, sans-serif; 
+          color: #333; 
+          line-height: 1.6;
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px;
+          background-color: #f9f9f9;
+        }
+        .container {
+          background-color: white;
+          padding: 40px;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .invoice-header { 
+          text-align: center; 
+          margin-bottom: 40px; 
+          padding-bottom: 20px;
+          border-bottom: 2px solid #3498db;
+        }
+        .invoice-header h1 {
+          color: #3498db;
+          margin-bottom: 5px;
+          font-size: 32px;
+        }
+        .invoice-header h2 {
+          font-size: 24px;
+          color: #555;
+          margin-top: 5px;
+        }
+        .invoice-details { 
+          margin-bottom: 40px; 
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+        .invoice-details p {
+          margin: 8px 0;
+          font-size: 16px;
+        }
+        table { 
+          width: 100%; 
+          border-collapse: collapse; 
+          margin-bottom: 30px; 
+          border-radius: 4px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        th, td { 
+          padding: 15px 20px; 
+          text-align: left; 
+          border-bottom: 1px solid #eee; 
+        }
+        th { 
+          background-color: #3498db; 
+          color: white;
+          font-weight: 500;
+          font-size: 16px;
+        }
+        td {
+          font-size: 16px;
+        }
+        tr:nth-child(even) { background-color: #f8f8f8; }
+        tr:hover { background-color: #f1f1f1; }
+        .total-row { 
+          font-weight: bold; 
+          background-color: #f0f7ff !important;
+          font-size: 18px;
+        }
+        .total-row td {
+          border-top: 2px solid #3498db;
+          padding: 18px 20px;
+        }
+        .section-title { 
+          margin-top: 30px; 
+          margin-bottom: 20px; 
+          color: #3498db;
+          border-left: 4px solid #3498db;
+          padding-left: 15px;
+          font-size: 22px;
+        }
+        .print-button {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background-color: #3498db;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 16px;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+          transition: all 0.3s ease;
+        }
+        .print-button:hover {
+          background-color: #2980b9;
+        }
+        .thank-you {
+          margin-top: 60px; 
+          text-align: center;
+          padding: 20px;
+          background-color: #f0f7ff;
+          border-radius: 8px;
+          font-size: 18px;
+          color: #3498db;
+        }
+        .footer {
+          margin-top: 40px;
+          text-align: center;
+          color: #777;
+          font-size: 14px;
+          padding-top: 20px;
+          border-top: 1px solid #eee;
+        }
       </style>
     </head>
     <body>
-      <div class="invoice-header">
-        <h1>3DQ - Invoice</h1>
-        <h2>${quote.title}</h2>
-      </div>
-      
-      <div class="invoice-details">
-        <p><strong>Invoice Number:</strong> ${quote.quote_number}</p>
-        <p><strong>Customer:</strong> ${quote.customer_name}</p>
-        <p><strong>Date:</strong> ${quote.date}</p>
-        ${quote.notes ? `<p><strong>Notes:</strong> ${quote.notes}</p>` : ''}
-      </div>
-      
-      <h3 class="section-title">Invoice Summary</h3>
-      <table>
-        <tbody>
-          <tr>
-            <td>3D Printing</td>
-            <td>${currency}${formatCost(printingCost)}</td>
-          </tr>
-          <tr>
-            <td>Design & Handling</td>
-            <td>${currency}${formatCost(designHandlingCost)}</td>
-          </tr>
-          ${hardwareTotal > 0 ? `
+      <button onclick="window.print()" class="print-button no-print">Print Invoice</button>
+      <div class="container">
+        <div class="invoice-header">
+          <h1>${companyName} - Invoice</h1>
+          <h2>${quote.title}</h2>
+        </div>
+        
+        <div class="invoice-details">
+          <div>
+            <p><strong>Invoice Number:</strong> ${quote.quote_number}</p>
+            <p><strong>Date:</strong> ${quote.date}</p>
+          </div>
+          <div>
+            <p><strong>Customer:</strong> ${quote.customer_name}</p>
+            ${quote.notes ? `<p><strong>Notes:</strong> ${quote.notes}</p>` : ''}
+          </div>
+        </div>
+        
+        <h3 class="section-title">Invoice Summary</h3>
+        <table>
+          <tbody>
             <tr>
-              <td>Hardware</td>
-              <td>${currency}${formatCost(hardwareTotal)}</td>
+              <td>3D Printing</td>
+              <td>${currency}${formatCost(printingCost)}</td>
             </tr>
-          ` : ''}
-          <tr class="total-row">
-            <td>Total</td>
-            <td>${currency}${formatCost(quote.total_cost)}</td>
-          </tr>
-        </tbody>
-      </table>
-      
-      <div style="margin-top: 50px; text-align: center;">
-        <p>Thank you for your business!</p>
+            <tr>
+              <td>Design & Handling</td>
+              <td>${currency}${formatCost(designHandlingCost)}</td>
+            </tr>
+            ${hardwareTotal > 0 ? `
+              <tr>
+                <td>Hardware</td>
+                <td>${currency}${formatCost(hardwareTotal)}</td>
+              </tr>
+            ` : ''}
+            <tr class="total-row">
+              <td>Total</td>
+              <td>${currency}${formatCost(quote.total_cost)}</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="thank-you">
+          <p>Thank you for your business!</p>
+        </div>
+        
+        <div class="footer">
+          <p>This invoice was generated by ${companyName}</p>
+        </div>
       </div>
     </body>
     </html>

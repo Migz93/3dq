@@ -160,7 +160,8 @@ function initDb() {
     { key: 'default_markup_percent', value: '50' },
     { key: 'currency_symbol', value: '£' },
     { key: 'quote_prefix', value: '3DQ' },
-    { key: 'accent_color', value: '#3498db' }
+    { key: 'accent_color', value: '#3498db' },
+    { key: 'company_name', value: 'Prints Inc' }
   ];
 
   const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');

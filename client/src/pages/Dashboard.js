@@ -26,7 +26,8 @@ import {
   FlashOn as FlashOnIcon,
   Visibility as VisibilityIcon,
   FileCopy as FileCopyIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import SettingsContext from '../context/SettingsContext';
 
@@ -209,6 +210,15 @@ function Dashboard() {
                       title="View Quote"
                     >
                       <VisibilityIcon />
+                    </IconButton>
+                    <IconButton
+                      component={Link}
+                      to={`/quote/edit/${quote.id}`}
+                      color="primary"
+                      size="small"
+                      title="Edit Quote"
+                    >
+                      <EditIcon />
                     </IconButton>
                     <IconButton
                       color="primary"

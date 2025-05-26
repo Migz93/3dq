@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -28,7 +28,11 @@ import CostSummary from '../components/quote/CostSummary';
 
 function QuoteBuilder() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { settings } = useContext(SettingsContext);
+  
+  // Check if we're editing an existing quote
+  const isEditMode = !!id;
   
   // Step state
   const [activeStep, setActiveStep] = useState(0);
@@ -134,6 +138,92 @@ function QuoteBuilder() {
 
     fetchData();
   }, []);
+  
+  // Fetch quote data if in edit mode
+  useEffect(() => {
+    const fetchQuoteData = async () => {
+      if (!isEditMode) return;
+      
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/quotes/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch quote');
+        }
+        const quoteData = await response.json();
+        
+        // Populate form data
+        setFormData({
+          customer_name: quoteData.customer_name,
+          title: quoteData.title,
+          date: quoteData.date,
+          notes: quoteData.notes || ''
+        });
+        
+        // Populate filaments
+        if (quoteData.filaments && quoteData.filaments.length > 0) {
+          setQuoteFilaments(quoteData.filaments.map(f => ({
+            id: f.id,
+            filament_id: f.filament_id,
+            filament_name: f.filament_name,
+            filament_price_per_gram: f.filament_price_per_gram,
+            grams_used: f.grams_used,
+            total_cost: f.total_cost
+          })));
+          
+          // Set multi-material flag if more than one filament
+          setMultiMaterial(quoteData.filaments.length > 1);
+        }
+        
+        // Populate hardware
+        if (quoteData.hardware && quoteData.hardware.length > 0) {
+          setQuoteHardware(quoteData.hardware.map(h => ({
+            id: h.id,
+            hardware_id: h.hardware_id,
+            hardware_name: h.hardware_name,
+            quantity: h.quantity,
+            unit_price: h.unit_price,
+            total_cost: h.total_cost
+          })));
+        }
+        
+        // Populate print setup
+        if (quoteData.printSetup) {
+          setPrintSetup({
+            printer_id: quoteData.printSetup.printer_id,
+            printer_name: quoteData.printSetup.printer_name,
+            print_time: quoteData.printSetup.print_time,
+            power_cost: quoteData.printSetup.power_cost,
+            depreciation_cost: quoteData.printSetup.depreciation_cost
+          });
+        }
+        
+        // Populate labour
+        if (quoteData.labour) {
+          setLabour({
+            design_minutes: quoteData.labour.design_minutes,
+            preparation_minutes: quoteData.labour.preparation_minutes,
+            post_processing_minutes: quoteData.labour.post_processing_minutes,
+            other_minutes: quoteData.labour.other_minutes,
+            labour_rate_per_hour: quoteData.labour.labour_rate_per_hour,
+            total_cost: quoteData.labour.total_cost
+          });
+        }
+        
+        // Set markup
+        setMarkup(quoteData.markup_percent);
+        setTotalCost(quoteData.total_cost);
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching quote data:', error);
+        setError(error.message);
+        setLoading(false);
+      }
+    };
+    
+    fetchQuoteData();
+  }, [id, isEditMode]);
 
   // Handle form input change for job info
   const handleInputChange = (e) => {
@@ -176,17 +266,9 @@ function QuoteBuilder() {
     setError(null);
 
     try {
-      // Get next quote number
-      const quoteNumberResponse = await fetch('/api/settings/quote/next-number');
-      if (!quoteNumberResponse.ok) {
-        throw new Error('Failed to get quote number');
-      }
-      const quoteNumberData = await quoteNumberResponse.json();
-
       // Prepare quote data
-      const quoteData = {
-        quote_number: quoteNumberData.quote_number,
-        title: formData.title || `${quoteNumberData.quote_number} - ${formData.customer_name}`,
+      let quoteData = {
+        title: formData.title,
         customer_name: formData.customer_name,
         date: formData.date,
         notes: formData.notes,
@@ -232,9 +314,20 @@ function QuoteBuilder() {
         }
       };
 
-      // Save quote
-      const saveResponse = await fetch('/api/quotes', {
-        method: 'POST',
+      // Get quote number for new quotes
+      if (!isEditMode) {
+        const quoteNumberResponse = await fetch('/api/settings/quote/next-number');
+        if (!quoteNumberResponse.ok) {
+          throw new Error('Failed to get quote number');
+        }
+        const quoteNumberData = await quoteNumberResponse.json();
+        quoteData.quote_number = quoteNumberData.quote_number;
+        quoteData.title = formData.title || `${quoteNumberData.quote_number} - ${formData.customer_name}`;
+      }
+      
+      // Save or update quote
+      const saveResponse = await fetch(isEditMode ? `/api/quotes/${id}` : '/api/quotes', {
+        method: isEditMode ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -333,7 +426,7 @@ function QuoteBuilder() {
   return (
     <Box>
       <Typography variant="h4" component="h1" sx={{ mb: 4 }}>
-        New Quote
+        {isEditMode ? 'Edit Quote' : 'New Quote'}
       </Typography>
 
       <Stepper activeStep={activeStep} sx={{ mb: 4 }}>

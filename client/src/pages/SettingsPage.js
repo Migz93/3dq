@@ -23,7 +23,8 @@ function SettingsPage() {
     default_markup_percent: '',
     currency_symbol: '',
     quote_prefix: '',
-    accent_color: ''
+    accent_color: '',
+    company_name: ''
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,7 +40,8 @@ function SettingsPage() {
         default_markup_percent: settings.default_markup_percent || '',
         currency_symbol: settings.currency_symbol || '',
         quote_prefix: settings.quote_prefix || '',
-        accent_color: settings.accent_color || '#3498db'
+        accent_color: settings.accent_color || '#3498db',
+        company_name: settings.company_name || 'Prints Inc'
       });
       setLoading(false);
     }
@@ -165,6 +167,17 @@ function SettingsPage() {
                   fullWidth
                   required
                   helperText="Symbol used for all monetary values (e.g., £, $, €)"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  name="company_name"
+                  label="Company Name"
+                  value={formData.company_name}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                  helperText="Your company name (appears on invoices)"
                 />
               </Grid>
               <Grid item xs={12} sm={6}>

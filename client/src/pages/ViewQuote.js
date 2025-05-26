@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -26,7 +26,8 @@ import {
 import {
   FileCopy as FileCopyIcon,
   Delete as DeleteIcon,
-  PictureAsPdf as PdfIcon
+  Description as InvoiceIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import SettingsContext from '../context/SettingsContext';
 
@@ -118,9 +119,9 @@ function ViewQuote() {
     }
   };
 
-  // Generate PDF
-  const generatePdf = (type) => {
-    window.open(`/api/quotes/${id}/pdf/${type}`, '_blank');
+  // Generate invoice
+  const generateInvoice = (type) => {
+    window.open(`/api/quotes/${id}/invoice/${type}`, '_blank');
   };
 
   if (loading) {
@@ -166,19 +167,28 @@ function ViewQuote() {
         <Box>
           <Button
             variant="outlined"
-            startIcon={<PdfIcon />}
-            onClick={() => generatePdf('client')}
+            startIcon={<InvoiceIcon />}
+            onClick={() => generateInvoice('client')}
             sx={{ mr: 1 }}
           >
-            Client PDF
+            Client Invoice
           </Button>
           <Button
             variant="outlined"
-            startIcon={<PdfIcon />}
-            onClick={() => generatePdf('internal')}
+            startIcon={<InvoiceIcon />}
+            onClick={() => generateInvoice('internal')}
             sx={{ mr: 1 }}
           >
-            Internal PDF
+            Internal Invoice
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<EditIcon />}
+            component={Link}
+            to={`/quote/edit/${id}`}
+            sx={{ mr: 1 }}
+          >
+            Edit
           </Button>
           <Button
             variant="outlined"

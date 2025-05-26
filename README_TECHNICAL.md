@@ -9,7 +9,7 @@ This document provides technical details about the 3DQ application architecture,
 - **UI Library**: Material-UI (MUI v5)
 - **State Management**: React Context API
 - **Routing**: React Router v6
-- **PDF Generation**: React-PDF
+- **HTML Invoices**: Responsive invoice templates with print functionality
 
 ### Backend
 - **Server**: Express.js (Node.js)
@@ -32,7 +32,7 @@ This document provides technical details about the 3DQ application architecture,
 │       └── App.js          # Main App component
 ├── config/                 # Configuration and data (persisted)
 │   ├── 3dq.sqlite         # SQLite database
-│   └── quotes/            # Generated PDF quotes
+│   └── quotes/            # Directory for data persistence
 ├── routes/                 # Express API routes
 ├── utils/                  # Utility scripts
 │   └── init-db.js         # Database initialization script
@@ -49,6 +49,15 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL
 )
 ```
+
+Default settings include:
+- `electricity_cost_per_kwh`: Cost per kilowatt-hour of electricity
+- `labour_rate_per_hour`: Hourly rate used for labor calculations
+- `default_markup_percent`: Default markup percentage for quotes
+- `currency_symbol`: Symbol used for monetary values (e.g., £, $, €)
+- `quote_prefix`: Prefix used for quote numbers
+- `accent_color`: UI accent color
+- `company_name`: Company name used on invoices (default: "Prints Inc")
 
 ### Filaments Table
 ```sql
@@ -216,7 +225,7 @@ CREATE TABLE IF NOT EXISTS quote_labour (
 - `POST /api/quotes` - Create a quote
 - `PUT /api/quotes/:id` - Update a quote
 - `DELETE /api/quotes/:id` - Delete a quote
-- `GET /api/quotes/:id/pdf/:type` - Generate a PDF for a quote (internal or client)
+- `GET /api/quotes/:id/invoice/:type` - Generate an HTML invoice for a quote (internal or client)
 
 ## Development Setup
 
@@ -294,7 +303,7 @@ The Dockerfile:
 
 The application uses a SQLite database for data storage. The database file is stored in the `config` directory, which can be mounted as a volume in Docker for persistence.
 
-Generated PDF quotes are stored in the `config/quotes` directory, which is also mounted as a volume in Docker.
+The `config/quotes` directory is mounted as a volume in Docker for data persistence.
 
 ## Calculations
 
