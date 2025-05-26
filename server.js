@@ -8,29 +8,88 @@ require('dotenv').config();
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 6123;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Initialize database
-const dbPath = path.join(__dirname, 'database', '3dq.sqlite');
+// Define paths for Docker compatibility
+const CONFIG_DIR = process.env.CONFIG_DIR || path.join(__dirname, 'config');
+const QUOTES_DIR = path.join(CONFIG_DIR, 'quotes');
+const dbPath = path.join(CONFIG_DIR, '3dq.sqlite');
+const dbInitPath = path.join(__dirname, 'utils', 'init-db.js');
 
-// Ensure database directory exists
-if (!fs.existsSync(path.dirname(dbPath))) {
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+// Ensure config and quotes directories exist
+if (!fs.existsSync(CONFIG_DIR)) {
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  console.log(`Created config directory: ${CONFIG_DIR}`);
 }
 
+if (!fs.existsSync(QUOTES_DIR)) {
+  fs.mkdirSync(QUOTES_DIR, { recursive: true });
+  console.log(`Created quotes directory: ${QUOTES_DIR}`);
+}
+
+// Check if database exists and has tables
+let needsInit = false;
+if (!fs.existsSync(dbPath)) {
+  console.log('Database file not found, will initialize a new one');
+  needsInit = true;
+} else {
+  // Check if tables exist
+  try {
+    const db = new Database(dbPath);
+    // Try to query the settings table
+    try {
+      db.prepare('SELECT * FROM settings LIMIT 1').get();
+      console.log('Database exists and has tables');
+    } catch (error) {
+      console.log('Database exists but tables are missing, will initialize');
+      needsInit = true;
+    }
+    db.close();
+  } catch (error) {
+    console.error('Error checking database:', error);
+    needsInit = true;
+  }
+}
+
+// Initialize database if needed
+if (needsInit) {
+  console.log('Initializing database...');
+  try {
+    // Delete the database file if it exists but is corrupted
+    if (fs.existsSync(dbPath)) {
+      fs.unlinkSync(dbPath);
+    }
+    
+    // Run the initialization script
+    require('./utils/init-db');
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    process.exit(1); // Exit if database initialization fails
+  }
+}
+
+// Open database connection
 const db = new Database(dbPath);
 
 // Import routes
-const filamentRoutes = require('./routes/filaments');
-const printerRoutes = require('./routes/printers');
-const hardwareRoutes = require('./routes/hardware');
-const quoteRoutes = require('./routes/quotes');
-const settingsRoutes = require('./routes/settings');
+const createFilamentRoutes = require('./routes/filaments');
+const createPrinterRoutes = require('./routes/printers');
+const createHardwareRoutes = require('./routes/hardware');
+const createQuoteRoutes = require('./routes/quotes');
+const createSettingsRoutes = require('./routes/settings');
+
+// Initialize routes with the database instance
+const filamentRoutes = createFilamentRoutes(db);
+const printerRoutes = createPrinterRoutes(db);
+const hardwareRoutes = createHardwareRoutes(db);
+const quoteRoutes = createQuoteRoutes(db);
+const settingsRoutes = createSettingsRoutes(db);
 
 // Use routes
 app.use('/api/filaments', filamentRoutes);

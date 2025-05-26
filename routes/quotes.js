@@ -1,11 +1,11 @@
 const express = require('express');
-const router = express.Router();
 const path = require('path');
-const Database = require('better-sqlite3');
 const pdf = require('html-pdf');
 const fs = require('fs');
 
-const db = new Database(path.join(__dirname, '../database/3dq.sqlite'));
+// Export a function that accepts a database instance
+module.exports = (db) => {
+  const router = express.Router();
 
 // Get all quotes
 router.get('/', (req, res) => {
@@ -413,8 +413,15 @@ router.get('/:id/pdf/:type', (req, res) => {
     const labour = db.prepare('SELECT * FROM quote_labour WHERE quote_id = ?').get(quoteId);
     
     // Get currency symbol from settings
-    const currencySetting = db.prepare('SELECT value FROM settings WHERE key = "currency_symbol"').get();
-    const currency = currencySetting ? currencySetting.value : '£';
+    let currency = '£'; // Default currency symbol (£)
+    try {
+      const currencySetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('currency_symbol');
+      if (currencySetting && currencySetting.value) {
+        currency = currencySetting.value;
+      }
+    } catch (error) {
+      console.warn('Could not get currency_symbol setting, using default:', error);
+    }
     
     // Generate HTML for PDF
     let html = '';
@@ -438,13 +445,16 @@ router.get('/:id/pdf/:type', (req, res) => {
       }
     };
     
+    // Get the quotes directory path (for Docker compatibility)
+    const CONFIG_DIR = process.env.CONFIG_DIR || path.join(__dirname, '..', 'config');
+    const QUOTES_DIR = path.join(CONFIG_DIR, 'quotes');
+    
     // Create directory for PDFs if it doesn't exist
-    const pdfDir = path.join(__dirname, '../pdfs');
-    if (!fs.existsSync(pdfDir)) {
-      fs.mkdirSync(pdfDir, { recursive: true });
+    if (!fs.existsSync(QUOTES_DIR)) {
+      fs.mkdirSync(QUOTES_DIR, { recursive: true });
     }
     
-    const pdfPath = path.join(pdfDir, `quote_${quoteId}_${pdfType}.pdf`);
+    const pdfPath = path.join(QUOTES_DIR, `quote_${quoteId}_${pdfType}.pdf`);
     
     pdf.create(html, options).toFile(pdfPath, (err, result) => {
       if (err) {
@@ -737,4 +747,5 @@ function generateClientInvoiceHtml(quote, filaments, hardware, printSetup, labou
   `;
 }
 
-module.exports = router;
+  return router;
+};

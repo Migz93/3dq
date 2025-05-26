@@ -1,9 +1,9 @@
 const express = require('express');
-const router = express.Router();
 const path = require('path');
-const Database = require('better-sqlite3');
 
-const db = new Database(path.join(__dirname, '../database/3dq.sqlite'));
+// Export a function that accepts a database instance
+module.exports = (db) => {
+  const router = express.Router();
 
 // Get all settings
 router.get('/', (req, res) => {
@@ -102,40 +102,62 @@ router.put('/', (req, res) => {
   }
 });
 
-// Get next quote number and increment it
+// Get next quote number based on existing quotes
 router.get('/quote/next-number', (req, res) => {
   try {
-    // Start a transaction
-    db.transaction(() => {
-      // Get current quote number
-      const setting = db.prepare('SELECT value FROM settings WHERE key = "next_quote_number"').get();
-      
-      if (!setting) {
-        throw new Error('next_quote_number setting not found');
+    // Get quote prefix from settings
+    let prefix = '3DQ'; // Default prefix
+    try {
+      const prefixSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('quote_prefix');
+      if (prefixSetting && prefixSetting.value) {
+        prefix = prefixSetting.value;
       }
+    } catch (settingError) {
+      console.warn('Could not get quote_prefix setting, using default:', settingError);
+    }
+    
+    // Get all quotes
+    let quotes = [];
+    try {
+      quotes = db.prepare('SELECT quote_number FROM quotes').all() || [];
+    } catch (quotesError) {
+      console.warn('Could not get quotes, assuming none exist:', quotesError);
+      // If the quotes table doesn't exist yet, we'll just use the default number 1
+    }
+    
+    let nextNumber = 1; // Default to 1 if no quotes exist
+    
+    if (quotes.length > 0) {
+      // Extract numbers from quote numbers and find the highest
+      const quoteNumbers = [];
       
-      const currentNumber = parseInt(setting.value);
-      
-      // Increment the quote number
-      db.prepare('UPDATE settings SET value = ? WHERE key = "next_quote_number"')
-        .run((currentNumber + 1).toString());
-      
-      // Get quote prefix
-      const prefixSetting = db.prepare('SELECT value FROM settings WHERE key = "quote_prefix"').get();
-      const prefix = prefixSetting ? prefixSetting.value : '3DQ';
-      
-      // Format the quote number with leading zeros
-      const formattedNumber = currentNumber.toString().padStart(4, '0');
-      
-      res.json({ 
-        quote_number: `${prefix}${formattedNumber}`,
-        raw_number: currentNumber
+      quotes.forEach(q => {
+        if (q.quote_number && q.quote_number.startsWith(prefix)) {
+          // Extract the number part (e.g., "3DQ0001" -> "0001" -> 1)
+          const numericPart = q.quote_number.substring(prefix.length);
+          if (/^\d+$/.test(numericPart)) {
+            quoteNumbers.push(parseInt(numericPart, 10));
+          }
+        }
       });
-    })();
+      
+      if (quoteNumbers.length > 0) {
+        nextNumber = Math.max(...quoteNumbers) + 1;
+      }
+    }
+    
+    // Format the quote number with leading zeros
+    const formattedNumber = nextNumber.toString().padStart(4, '0');
+    
+    res.json({ 
+      quote_number: `${prefix}${formattedNumber}`,
+      raw_number: nextNumber
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error generating quote number:', error);
+    res.status(500).json({ error: 'Failed to generate quote number' });
   }
 });
 
-module.exports = router;
+  return router;
+};

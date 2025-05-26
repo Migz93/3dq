@@ -1,9 +1,9 @@
 const express = require('express');
-const router = express.Router();
 const path = require('path');
-const Database = require('better-sqlite3');
 
-const db = new Database(path.join(__dirname, '../database/3dq.sqlite'));
+// Export a function that accepts a database instance
+module.exports = (db) => {
+  const router = express.Router();
 
 // Get all hardware items
 router.get('/', (req, res) => {
@@ -170,4 +170,5 @@ router.patch('/:id/toggle-status', (req, res) => {
   }
 });
 
-module.exports = router;
+  return router;
+};

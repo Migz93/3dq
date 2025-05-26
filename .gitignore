@@ -6,3 +6,4 @@ build/
 *.db
 client/build/
 pdfs/
+config/

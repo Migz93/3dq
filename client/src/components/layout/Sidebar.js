@@ -13,8 +13,6 @@ import {
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
-  Add as AddIcon,
-  FlashOn as FlashOnIcon,
   Inventory as InventoryIcon,
   Print as PrintIcon,
   Hardware as HardwareIcon,
@@ -35,16 +33,6 @@ function Sidebar() {
       text: 'Quotes',
       icon: <DashboardIcon />,
       path: '/'
-    },
-    {
-      text: 'New Quote',
-      icon: <AddIcon />,
-      path: '/quote/new'
-    },
-    {
-      text: 'Quick Quote',
-      icon: <FlashOnIcon />,
-      path: '/quote/quick'
     },
     {
       text: 'Filament',
