@@ -23,7 +23,6 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon,
-  FlashOn as FlashOnIcon,
   Visibility as VisibilityIcon,
   FileCopy as FileCopyIcon,
   Delete as DeleteIcon,
@@ -139,25 +138,14 @@ function Dashboard() {
         <Typography variant="h4" component="h1">
           Quotes
         </Typography>
-        <Box>
-          <Button
-            component={Link}
-            to="/quote/quick"
-            variant="outlined"
-            startIcon={<FlashOnIcon />}
-            sx={{ mr: 2 }}
-          >
-            Quick Quote
-          </Button>
-          <Button
-            component={Link}
-            to="/quote/new"
-            variant="contained"
-            startIcon={<AddIcon />}
-          >
-            New Quote
-          </Button>
-        </Box>
+        <Button
+          component={Link}
+          to="/quote/new"
+          variant="contained"
+          startIcon={<AddIcon />}
+        >
+          New Quote
+        </Button>
       </Box>
 
       {quotes.length === 0 ? (
@@ -179,11 +167,11 @@ function Dashboard() {
           </CardContent>
         </Card>
       ) : (
-        <TableContainer component={Paper} sx={{ backgroundColor: 'background.paper' }}>
-          <Table>
+        <TableContainer component={Paper} sx={{ backgroundColor: 'background.paper', overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 650 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Quote Number</TableCell>
+                <TableCell>Quote #</TableCell>
                 <TableCell>Title</TableCell>
                 <TableCell>Customer</TableCell>
                 <TableCell>Date</TableCell>
@@ -195,13 +183,13 @@ function Dashboard() {
               {quotes.map((quote) => (
                 <TableRow key={quote.id}>
                   <TableCell>{quote.quote_number}</TableCell>
-                  <TableCell>{quote.title}</TableCell>
-                  <TableCell>{quote.customer_name}</TableCell>
-                  <TableCell>{quote.date}</TableCell>
+                  <TableCell sx={{ maxWidth: { xs: '80px', sm: '200px' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{quote.title}</TableCell>
+                  <TableCell sx={{ maxWidth: { xs: '80px', sm: '200px' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{quote.customer_name}</TableCell>
+                  <TableCell sx={{ maxWidth: { xs: '80px', sm: '200px' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{quote.date}</TableCell>
                   <TableCell align="right">
                     {settings.currency_symbol}{Number(quote.total_cost).toFixed(2)}
                   </TableCell>
-                  <TableCell align="center">
+                  <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
                     <IconButton
                       component={Link}
                       to={`/quote/${quote.id}`}

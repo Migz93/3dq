@@ -3,9 +3,12 @@ import React, { createContext, useState, useEffect } from 'react';
 const SidebarContext = createContext();
 
 export const SidebarProvider = ({ children }) => {
-  // Default to open on desktop, closed on mobile
+  // Check if we're on a mobile device
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  // Default to open on desktop, closed on mobile
   const [open, setOpen] = useState(!isMobile);
+  // Track if sidebar was manually closed on desktop
+  const [manuallyClosedOnDesktop, setManuallyClosedOnDesktop] = useState(false);
 
   // Update isMobile state when window resizes
   useEffect(() => {
@@ -18,8 +21,8 @@ export const SidebarProvider = ({ children }) => {
         setOpen(false);
       }
       
-      // Only auto-open when transitioning to desktop
-      if (isMobile && !mobile) {
+      // Only auto-open when transitioning to desktop if it wasn't manually closed
+      if (isMobile && !mobile && !manuallyClosedOnDesktop) {
         setOpen(true);
       }
     };
@@ -29,7 +32,18 @@ export const SidebarProvider = ({ children }) => {
   }, [isMobile]);
 
   const toggleSidebar = () => {
-    setOpen(!open);
+    const newOpenState = !open;
+    setOpen(newOpenState);
+    
+    // If we're on desktop and closing the sidebar, track that it was manually closed
+    if (!isMobile && !newOpenState) {
+      setManuallyClosedOnDesktop(true);
+    }
+    
+    // If we're on desktop and opening the sidebar, reset the manually closed state
+    if (!isMobile && newOpenState) {
+      setManuallyClosedOnDesktop(false);
+    }
   };
 
   return (

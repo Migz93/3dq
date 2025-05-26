@@ -423,13 +423,30 @@ function QuoteBuilder() {
         {isEditMode ? 'Edit Quote' : 'New Quote'}
       </Typography>
 
-      <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-        {steps.map((label) => (
-          <Step key={label}>
-            <StepLabel>{label}</StepLabel>
-          </Step>
-        ))}
-      </Stepper>
+      <Box sx={{ overflowX: 'auto', pb: 1 }}>
+        <Stepper 
+          activeStep={activeStep} 
+          sx={{ 
+            mb: 4,
+            minWidth: { xs: 600, md: '100%' } // Force minimum width on mobile
+          }}
+        >
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel 
+                sx={{
+                  '& .MuiStepLabel-labelContainer': {
+                    // Hide text on very small screens
+                    display: { xs: 'none', sm: 'block' }
+                  }
+                }}
+              >
+                {label}
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 4 }}>
@@ -439,22 +456,34 @@ function QuoteBuilder() {
 
       {getStepContent(activeStep)}
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: { xs: 'stretch', sm: 'space-between' },
+        gap: 2,
+        mt: 2 
+      }}>
         <Button
           variant="outlined"
           onClick={handleBack}
           startIcon={<BackIcon />}
           disabled={activeStep === 0}
+          sx={{ order: { xs: 2, sm: 1 } }}
+          fullWidth={false}
         >
           Back
         </Button>
-        <Box>
+        <Box sx={{ 
+          order: { xs: 1, sm: 2 },
+          alignSelf: { xs: 'stretch', sm: 'auto' }
+        }}>
           {activeStep === steps.length - 1 ? (
             <Button
               variant="contained"
               onClick={saveQuote}
               startIcon={<SaveIcon />}
               disabled={saving || !validateStep()}
+              fullWidth
             >
               {saving ? <CircularProgress size={24} /> : 'Save Quote'}
             </Button>
@@ -464,6 +493,7 @@ function QuoteBuilder() {
               onClick={handleNext}
               endIcon={<NextIcon />}
               disabled={!validateStep()}
+              fullWidth
             >
               Next
             </Button>

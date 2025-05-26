@@ -267,8 +267,8 @@ function QuickQuote() {
       <Card sx={{ mb: 4, backgroundColor: 'background.paper' }}>
         <CardHeader title="Quick Quote Calculator" />
         <CardContent>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
               <FormControl fullWidth disabled={filaments.length === 0}>
                 <InputLabel id="filament-label">Filament</InputLabel>
                 <Select
@@ -287,7 +287,7 @@ function QuickQuote() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <FormControl fullWidth disabled={printers.length === 0}>
                 <InputLabel id="printer-label">Printer</InputLabel>
                 <Select
@@ -416,19 +416,28 @@ function QuickQuote() {
             </Grid>
           </Grid>
           
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+          <Box sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: { xs: 'stretch', sm: 'flex-end' },
+            alignItems: { xs: 'stretch', sm: 'center' },
+            mt: 3,
+            gap: 2
+          }}>
             <TextField
               name="customer_name"
               label="Customer Name"
               value={formData.customer_name}
               onChange={handleInputChange}
-              sx={{ mr: 2, width: 250 }}
+              fullWidth
+              sx={{ maxWidth: { sm: 250 } }}
             />
             <Button
               variant="contained"
               startIcon={<SaveIcon />}
               onClick={saveQuote}
               disabled={saving}
+              sx={{ alignSelf: { xs: 'stretch', sm: 'auto' } }}
             >
               {saving ? <CircularProgress size={24} /> : 'Save Quote'}
             </Button>

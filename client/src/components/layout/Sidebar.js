@@ -10,17 +10,18 @@ import {
   ListItemText,
   Divider,
   Typography,
-  IconButton,
+
   useTheme,
   useMediaQuery
 } from '@mui/material';
-import { ChevronLeft as ChevronLeftIcon } from '@mui/icons-material';
+
 import {
   Dashboard as DashboardIcon,
   Inventory as InventoryIcon,
   Print as PrintIcon,
   Hardware as HardwareIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  FlashOn as FlashOnIcon
 } from '@mui/icons-material';
 import SettingsContext from '../../context/SettingsContext';
 import SidebarContext from '../../context/SidebarContext';
@@ -38,6 +39,11 @@ function Sidebar() {
   
   // Define sidebar menu items
   const menuItems = [
+    {
+      text: 'Quick Quote',
+      icon: <FlashOnIcon />,
+      path: '/quote/quick'
+    },
     {
       text: 'Quotes',
       icon: <DashboardIcon />,
@@ -67,18 +73,18 @@ function Sidebar() {
 
   return (
     <Drawer
-      variant={isSmallScreen ? "temporary" : "permanent"}
+      variant={isSmallScreen ? "temporary" : "persistent"}
       open={open}
       onClose={toggleSidebar}
       sx={{
-        width: open ? drawerWidth : closedDrawerWidth,
+        width: open ? drawerWidth : 0,
         flexShrink: 0,
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
           backgroundColor: '#1e1e1e',
           borderRight: '1px solid rgba(255, 255, 255, 0.12)',
-          transition: theme.transitions.create('width', {
+          transition: theme.transitions.create(['width', 'margin'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
           }),
@@ -88,15 +94,10 @@ function Sidebar() {
         keepMounted: true, // Better open performance on mobile
       }}
     >
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Typography variant="h5" component="div" sx={{ fontWeight: 'bold', color: settings.accent_color || '#3498db' }}>
           3DQ
         </Typography>
-        {isSmallScreen && (
-          <IconButton onClick={toggleSidebar} sx={{ color: 'white' }}>
-            <ChevronLeftIcon />
-          </IconButton>
-        )}
       </Box>
       <Divider />
       <List>

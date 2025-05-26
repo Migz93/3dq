@@ -281,8 +281,8 @@ function HardwarePage() {
           </CardContent>
         </Card>
       ) : (
-        <TableContainer component={Paper} sx={{ backgroundColor: 'background.paper' }}>
-          <Table>
+        <TableContainer component={Paper} sx={{ backgroundColor: 'background.paper', overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 500 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Name</TableCell>
@@ -294,7 +294,9 @@ function HardwarePage() {
             <TableBody>
               {filteredHardware.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>{item.name}</TableCell>
+                  <TableCell sx={{ maxWidth: { xs: '80px', sm: '200px' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.name}
+                  </TableCell>
                   <TableCell>{settings.currency_symbol}{Number(item.unit_price).toFixed(2)}</TableCell>
                   <TableCell>
                     {item.link ? (
@@ -310,7 +312,7 @@ function HardwarePage() {
                       <Typography variant="body2" color="text.secondary">No link</Typography>
                     )}
                   </TableCell>
-                  <TableCell align="center">
+                  <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
                     <IconButton
                       color="primary"
                       size="small"

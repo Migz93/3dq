@@ -59,7 +59,7 @@ function TopBar() {
           aria-label="toggle sidebar"
           edge="start"
           onClick={toggleSidebar}
-          sx={{ mr: 2, display: { sm: 'none' } }}
+          sx={{ mr: 2 }}
         >
           <MenuIcon />
         </IconButton>

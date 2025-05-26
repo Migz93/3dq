@@ -307,8 +307,8 @@ function FilamentPage() {
           </CardContent>
         </Card>
       ) : (
-        <TableContainer component={Paper} sx={{ backgroundColor: 'background.paper' }}>
-          <Table>
+        <TableContainer component={Paper} sx={{ backgroundColor: 'background.paper', overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 650 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Color</TableCell>
@@ -317,7 +317,7 @@ function FilamentPage() {
                 <TableCell>Diameter</TableCell>
                 <TableCell>Spool Weight</TableCell>
                 <TableCell>Spool Price</TableCell>
-                <TableCell>Price per kg</TableCell>
+                <TableCell>Price/kg</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -335,13 +335,15 @@ function FilamentPage() {
                       }} 
                     />
                   </TableCell>
-                  <TableCell>{filament.name}</TableCell>
-                  <TableCell>{filament.type}</TableCell>
+                  <TableCell sx={{ maxWidth: { xs: '80px', sm: '200px' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {filament.name}
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: { xs: '60px', sm: '120px' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{filament.type}</TableCell>
                   <TableCell>{filament.diameter} mm</TableCell>
                   <TableCell>{filament.spool_weight} g</TableCell>
                   <TableCell>{settings.currency_symbol}{Number(filament.spool_price).toFixed(2)}</TableCell>
                   <TableCell>{settings.currency_symbol}{Number(filament.price_per_kg).toFixed(2)}</TableCell>
-                  <TableCell align="center">
+                  <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
                     <IconButton
                       color="primary"
                       size="small"

@@ -297,8 +297,8 @@ function PrinterPage() {
           </CardContent>
         </Card>
       ) : (
-        <TableContainer component={Paper} sx={{ backgroundColor: 'background.paper' }}>
-          <Table>
+        <TableContainer component={Paper} sx={{ backgroundColor: 'background.paper', overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 650 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Name</TableCell>
@@ -307,21 +307,23 @@ function PrinterPage() {
                 <TableCell>Depreciation Time</TableCell>
                 <TableCell>Service Cost</TableCell>
                 <TableCell>Power Usage</TableCell>
-                <TableCell>Depreciation per Hour</TableCell>
+                <TableCell>Depr./Hour</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredPrinters.map((printer) => (
                 <TableRow key={printer.id}>
-                  <TableCell>{printer.name}</TableCell>
+                  <TableCell sx={{ maxWidth: { xs: '80px', sm: '200px' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {printer.name}
+                  </TableCell>
                   <TableCell>{printer.material_diameter} mm</TableCell>
                   <TableCell>{settings.currency_symbol}{Number(printer.price).toFixed(2)}</TableCell>
                   <TableCell>{printer.depreciation_time} hrs</TableCell>
                   <TableCell>{settings.currency_symbol}{Number(printer.service_cost).toFixed(2)}</TableCell>
                   <TableCell>{printer.power_usage} W</TableCell>
                   <TableCell>{settings.currency_symbol}{Number(printer.depreciation_per_hour).toFixed(2)}</TableCell>
-                  <TableCell align="center">
+                  <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
                     <IconButton
                       color="primary"
                       size="small"
