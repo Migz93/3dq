@@ -348,3 +348,47 @@ node utils/init-db.js
 
 ### API Errors
 Check the server logs for detailed error messages. Most API errors will be logged to the console.
+
+## Frontend Development
+
+### Making and Applying Changes
+
+The 3DQ application uses a React frontend that is built and then served by the Express backend. When you make changes to the frontend code (files in the `client/src` directory), you need to rebuild the frontend for those changes to take effect in the running application.
+
+#### When to Rebuild
+
+You need to rebuild the frontend in the following scenarios:
+
+- After modifying React components (`.js` files in `client/src`)  
+- After updating styles (CSS files)
+- After adding new frontend dependencies
+- After modifying routes or context providers
+
+#### How to Rebuild
+
+To rebuild the frontend after making changes:
+
+```bash
+# Stop the running server (if it's running)
+# Then rebuild the frontend
+npm run build
+
+# Start the server again to serve the updated frontend
+npm start
+```
+
+The `npm run build` command compiles the React application into optimized static files in the `client/build` directory, which the Express server then serves to clients.
+
+#### Development Mode
+
+Alternatively, during active development, you can use the development mode which automatically rebuilds and refreshes when you make changes:
+
+```bash
+# In one terminal, start the backend server
+npm run server
+
+# In another terminal, start the frontend in development mode
+npm run client
+```
+
+This will start the React development server with hot reloading enabled, so changes to the frontend code will be immediately visible without manually rebuilding.

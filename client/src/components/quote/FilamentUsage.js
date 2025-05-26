@@ -11,8 +11,6 @@ import {
   IconButton,
   InputAdornment,
   Box,
-  Switch,
-  FormControlLabel,
   Divider,
   Button
 } from '@mui/material';
@@ -25,8 +23,6 @@ function FilamentUsage({
   filaments, 
   quoteFilaments, 
   setQuoteFilaments, 
-  multiMaterial, 
-  setMultiMaterial,
   currencySymbol
 }) {
   // Add a new filament to the quote
@@ -102,14 +98,12 @@ function FilamentUsage({
     }));
   };
 
-  // Toggle multi-material mode
-  const handleMultiMaterialToggle = () => {
-    if (!multiMaterial && quoteFilaments.length === 0) {
-      // Add first filament when enabling multi-material
+  // Ensure we always have at least one filament
+  React.useEffect(() => {
+    if (quoteFilaments.length === 0 && filaments.length > 0) {
       addFilament();
     }
-    setMultiMaterial(!multiMaterial);
-  };
+  }, [quoteFilaments.length, filaments.length]);
 
   // Calculate total filament cost
   const totalFilamentCost = quoteFilaments.reduce((sum, f) => sum + f.total_cost, 0);
@@ -120,19 +114,9 @@ function FilamentUsage({
         <Typography variant="h6">
           Filament Usage
         </Typography>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={multiMaterial}
-              onChange={handleMultiMaterialToggle}
-              color="primary"
-            />
-          }
-          label="Multi-Material"
-        />
       </Box>
 
-      {multiMaterial ? (
+      {
         // Multi-material mode
         <>
           {quoteFilaments.map((filament, index) => (
@@ -208,60 +192,7 @@ function FilamentUsage({
             </Typography>
           </Box>
         </>
-      ) : (
-        // Single material mode
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}>
-            <FormControl fullWidth>
-              <InputLabel id="filament-label">Filament</InputLabel>
-              <Select
-                labelId="filament-label"
-                value={quoteFilaments[0]?.filament_id || ''}
-                onChange={(e) => handleFilamentChange(quoteFilaments[0]?.id, e.target.value)}
-                label="Filament"
-                disabled={filaments.length === 0}
-              >
-                {filaments.map((filament) => (
-                  <MenuItem key={filament.id} value={filament.id}>
-                    {filament.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField
-              label="Weight"
-              type="number"
-              value={quoteFilaments[0]?.grams_used || 0}
-              onChange={(e) => handleWeightChange(quoteFilaments[0]?.id, e.target.value)}
-              fullWidth
-              disabled={!quoteFilaments[0]}
-              InputProps={{
-                endAdornment: <InputAdornment position="end">g</InputAdornment>,
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField
-              label="Price per gram"
-              type="number"
-              value={quoteFilaments[0]?.filament_price_per_gram || 0}
-              onChange={(e) => handlePriceChange(quoteFilaments[0]?.id, e.target.value)}
-              fullWidth
-              disabled={!quoteFilaments[0]}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
-              }}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="subtitle1" align="right">
-              Total: {currencySymbol}{totalFilamentCost.toFixed(2)}
-            </Typography>
-          </Grid>
-        </Grid>
-      )}
+      }
     </Paper>
   );
 }

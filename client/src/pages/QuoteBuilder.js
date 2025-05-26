@@ -55,7 +55,6 @@ function QuoteBuilder() {
   });
   
   const [quoteFilaments, setQuoteFilaments] = useState([]);
-  const [multiMaterial, setMultiMaterial] = useState(false);
   const [quoteHardware, setQuoteHardware] = useState([]);
   
   const [printSetup, setPrintSetup] = useState({
@@ -171,8 +170,7 @@ function QuoteBuilder() {
             total_cost: f.total_cost
           })));
           
-          // Set multi-material flag if more than one filament
-          setMultiMaterial(quoteData.filaments.length > 1);
+          // No need to set multi-material flag anymore
         }
         
         // Populate hardware
@@ -373,8 +371,6 @@ function QuoteBuilder() {
             filaments={filaments} 
             quoteFilaments={quoteFilaments} 
             setQuoteFilaments={setQuoteFilaments}
-            multiMaterial={multiMaterial}
-            setMultiMaterial={setMultiMaterial}
             currencySymbol={settings.currency_symbol}
           />
         );
