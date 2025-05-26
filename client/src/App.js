@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 
+
 // Layout components
 import Sidebar from './components/layout/Sidebar';
 import TopBar from './components/layout/TopBar';
@@ -20,6 +21,7 @@ import ViewQuote from './pages/ViewQuote';
 
 // Context
 import { SettingsProvider } from './context/SettingsContext';
+import { SidebarProvider } from './context/SidebarContext';
 
 function App() {
   const [settings, setSettings] = useState({
@@ -77,18 +79,19 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <SettingsProvider value={{ settings, setSettings }}>
+        <SidebarProvider>
         <CssBaseline />
         <Router>
-          <Box sx={{ display: 'flex' }}>
+          <Box sx={{ display: 'flex', height: '100vh' }}>
             <Sidebar />
             <Box
               component="main"
               sx={{
                 flexGrow: 1,
-                height: '100vh',
                 overflow: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
+                width: '100%',
               }}
             >
               <TopBar />
@@ -108,6 +111,7 @@ function App() {
             </Box>
           </Box>
         </Router>
+        </SidebarProvider>
       </SettingsProvider>
     </ThemeProvider>
   );

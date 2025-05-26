@@ -28,7 +28,9 @@ function PrintSetup({
     if (!selectedPrinter) return;
     
     const printTime = parseFloat(printSetup.print_time) || 0;
-    const electricityCost = printTime * selectedPrinter.power_usage * parseFloat(settings.electricity_cost_per_kwh);
+    // Convert watts to kilowatt-hours: watts / 1000 = kilowatts, then multiply by hours
+    const powerUsageInKwh = (selectedPrinter.power_usage / 1000) * printTime;
+    const electricityCost = powerUsageInKwh * parseFloat(settings.electricity_cost_per_kwh);
     const depreciationCost = printTime * selectedPrinter.depreciation_per_hour;
     
     setPrintSetup({

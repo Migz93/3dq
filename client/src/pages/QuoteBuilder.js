@@ -48,6 +48,7 @@ function QuoteBuilder() {
   
   // Form states
   const [formData, setFormData] = useState({
+    quote_number: '',
     customer_name: '',
     title: '',
     date: new Date().toISOString().split('T')[0],
@@ -153,6 +154,7 @@ function QuoteBuilder() {
         
         // Populate form data
         setFormData({
+          quote_number: quoteData.quote_number,
           customer_name: quoteData.customer_name,
           title: quoteData.title,
           date: quoteData.date,
@@ -266,6 +268,7 @@ function QuoteBuilder() {
     try {
       // Prepare quote data
       let quoteData = {
+        quote_number: formData.quote_number,
         title: formData.title,
         customer_name: formData.customer_name,
         date: formData.date,
@@ -312,15 +315,9 @@ function QuoteBuilder() {
         }
       };
 
-      // Get quote number for new quotes
-      if (!isEditMode) {
-        const quoteNumberResponse = await fetch('/api/settings/quote/next-number');
-        if (!quoteNumberResponse.ok) {
-          throw new Error('Failed to get quote number');
-        }
-        const quoteNumberData = await quoteNumberResponse.json();
-        quoteData.quote_number = quoteNumberData.quote_number;
-        quoteData.title = formData.title || `${quoteNumberData.quote_number} - ${formData.customer_name}`;
+      // Set title for new quotes if not provided
+      if (!isEditMode && !formData.title) {
+        quoteData.title = `${formData.quote_number} - ${formData.customer_name}`;
       }
       
       // Save or update quote
@@ -362,7 +359,8 @@ function QuoteBuilder() {
         return (
           <JobInfo 
             formData={formData} 
-            handleInputChange={handleInputChange} 
+            handleInputChange={handleInputChange}
+            isEditMode={isEditMode}
           />
         );
       case 1:

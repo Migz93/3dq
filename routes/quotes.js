@@ -633,7 +633,7 @@ function generateInternalInvoiceHtml(quote, filaments, hardware, printSetup, lab
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Internal Invoice - ${quote.title}</title>
+      <title>Internal Invoice - Quote #${quote.quote_number}</title>
       <style>
         @media print {
           .no-print { display: none !important; }
@@ -731,12 +731,12 @@ function generateInternalInvoiceHtml(quote, filaments, hardware, printSetup, lab
       <button onclick="window.print()" class="print-button no-print">Print Invoice</button>
       <div class="container">
       <div class="invoice-header">
-        <h1>${companyName} - Internal Invoice</h1>
-        <h2>${quote.title}</h2>
+        <h1>${companyName}</h1>
+        <h2>Quote #${quote.quote_number}</h2>
       </div>
       
       <div class="invoice-details">
-        <p><strong>Quote Number:</strong> ${quote.quote_number}</p>
+        <p><strong>Model Name:</strong> ${quote.title || 'N/A'}</p>
         <p><strong>Customer:</strong> ${quote.customer_name}</p>
         <p><strong>Date:</strong> ${quote.date}</p>
         ${quote.notes ? `<p><strong>Notes:</strong> ${quote.notes}</p>` : ''}
@@ -747,7 +747,7 @@ function generateInternalInvoiceHtml(quote, filaments, hardware, printSetup, lab
         <thead>
           <tr>
             <th>Material</th>
-            <th>Weight (g)</th>
+            <th>Filament Used (g)</th>
             <th>Price per gram</th>
             <th>Cost</th>
           </tr>
@@ -926,7 +926,7 @@ function generateClientInvoiceHtml(quote, filaments, hardware, printSetup, labou
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Invoice - ${quote.title}</title>
+      <title>Invoice - Quote #${quote.quote_number}</title>
       <style>
         @media print {
           .no-print { display: none !important; }

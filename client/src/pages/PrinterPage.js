@@ -319,7 +319,7 @@ function PrinterPage() {
                   <TableCell>{settings.currency_symbol}{Number(printer.price).toFixed(2)}</TableCell>
                   <TableCell>{printer.depreciation_time} hrs</TableCell>
                   <TableCell>{settings.currency_symbol}{Number(printer.service_cost).toFixed(2)}</TableCell>
-                  <TableCell>{printer.power_usage} kWh</TableCell>
+                  <TableCell>{printer.power_usage} W</TableCell>
                   <TableCell>{settings.currency_symbol}{Number(printer.depreciation_per_hour).toFixed(2)}</TableCell>
                   <TableCell align="center">
                     <IconButton
@@ -436,8 +436,9 @@ function PrinterPage() {
                 fullWidth
                 required
                 InputProps={{
-                  endAdornment: <InputAdornment position="end">kWh</InputAdornment>,
+                  endAdornment: <InputAdornment position="end">W</InputAdornment>,
                 }}
+                helperText="Average power consumption in watts while printing"
               />
             </Grid>
             <Grid item xs={12} sm={6}>

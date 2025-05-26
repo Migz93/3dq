@@ -116,7 +116,9 @@ function QuickQuote() {
 
       // Calculate costs
       const filamentCost = weightGrams * (selectedFilament.price_per_kg / 1000);
-      const electricityCost = printTime * selectedPrinter.power_usage * parseFloat(settings.electricity_cost_per_kwh);
+      // Convert watts to kilowatt-hours: watts / 1000 = kilowatts, then multiply by hours
+      const powerUsageInKwh = (selectedPrinter.power_usage / 1000) * printTime;
+      const electricityCost = powerUsageInKwh * parseFloat(settings.electricity_cost_per_kwh);
       const depreciationCost = printTime * selectedPrinter.depreciation_per_hour;
       
       const subtotal = filamentCost + electricityCost + depreciationCost;
@@ -307,7 +309,7 @@ function QuickQuote() {
             <Grid item xs={12} sm={6}>
               <TextField
                 name="weight_grams"
-                label="Weight"
+                label="Filament Used (g)"
                 type="number"
                 value={formData.weight_grams}
                 onChange={handleInputChange}

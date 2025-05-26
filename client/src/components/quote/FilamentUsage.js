@@ -121,7 +121,7 @@ function FilamentUsage({
         <>
           {quoteFilaments.map((filament, index) => (
             <Grid container spacing={2} key={filament.id} sx={{ mb: 2 }}>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel id={`filament-label-${filament.id}`}>Filament</InputLabel>
                   <Select
@@ -140,7 +140,7 @@ function FilamentUsage({
               </Grid>
               <Grid item xs={12} sm={3}>
                 <TextField
-                  label="Weight"
+                  label="Filament Used (g)"
                   type="number"
                   size="small"
                   value={filament.grams_used}
@@ -151,7 +151,7 @@ function FilamentUsage({
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid item xs={12} sm={2} sx={{ display: 'none' }}>
                 <TextField
                   label="Price per gram"
                   type="number"
@@ -164,10 +164,19 @@ function FilamentUsage({
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={2} sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography sx={{ flexGrow: 1 }}>
-                  {currencySymbol}{filament.total_cost.toFixed(2)}
-                </Typography>
+              <Grid item xs={12} sm={3}>
+                <TextField
+                  label="Filament Cost"
+                  type="text"
+                  size="small"
+                  value={`${currencySymbol}${filament.total_cost.toFixed(2)}`}
+                  fullWidth
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <IconButton 
                   color="error" 
                   onClick={() => removeFilament(filament.id)}
@@ -188,7 +197,7 @@ function FilamentUsage({
               Add Filament
             </Button>
             <Typography variant="subtitle1">
-              Total: {currencySymbol}{totalFilamentCost.toFixed(2)}
+              Total Filament Cost: {currencySymbol}{totalFilamentCost.toFixed(2)}
             </Typography>
           </Box>
         </>
