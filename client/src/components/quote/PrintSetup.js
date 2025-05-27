@@ -11,6 +11,7 @@ import {
   InputAdornment
 } from '@mui/material';
 import SettingsContext from '../../context/SettingsContext';
+import TimeInput, { parseTimeStringToMinutes } from '../common/TimeInput';
 
 function PrintSetup({ 
   printers, 
@@ -27,11 +28,14 @@ function PrintSetup({
     const selectedPrinter = printers.find(p => p.id === parseInt(printSetup.printer_id));
     if (!selectedPrinter) return;
     
-    const printTime = parseFloat(printSetup.print_time) || 0;
+    // Convert minutes to hours for calculations
+    const printTimeMinutes = parseInt(printSetup.print_time) || 0;
+    const printTimeHours = printTimeMinutes / 60;
+    
     // Convert watts to kilowatt-hours: watts / 1000 = kilowatts, then multiply by hours
-    const powerUsageInKwh = (selectedPrinter.power_usage / 1000) * printTime;
+    const powerUsageInKwh = (selectedPrinter.power_usage / 1000) * printTimeHours;
     const electricityCost = powerUsageInKwh * parseFloat(settings.electricity_cost_per_kwh);
-    const depreciationCost = printTime * selectedPrinter.depreciation_per_hour;
+    const depreciationCost = printTimeHours * selectedPrinter.depreciation_per_hour;
     
     setPrintSetup({
       ...printSetup,
@@ -56,11 +60,10 @@ function PrintSetup({
 
   // Handle print time change
   const handlePrintTimeChange = (e) => {
-    const printTime = parseFloat(e.target.value) || 0;
-    
+    const { name, value } = e.target;
     setPrintSetup({
       ...printSetup,
-      print_time: printTime
+      [name]: value
     });
   };
 
@@ -98,16 +101,13 @@ function PrintSetup({
           </FormControl>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField
+          <TimeInput
+            name="print_time"
             label="Print Time"
-            type="number"
             value={printSetup.print_time}
             onChange={handlePrintTimeChange}
             fullWidth
             disabled={noPrintersAvailable}
-            InputProps={{
-              endAdornment: <InputAdornment position="end">hours</InputAdornment>,
-            }}
           />
         </Grid>
         <Grid item xs={12} sm={6}>

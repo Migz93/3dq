@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import SettingsContext from '../context/SettingsContext';
+import TimeInput from '../components/common/TimeInput';
 
 function QuickQuote() {
   const { settings } = useContext(SettingsContext);
@@ -104,22 +105,23 @@ function QuickQuote() {
       }
 
       const weightGrams = parseFloat(formData.weight_grams) || 0;
-      const printTime = parseFloat(formData.print_time) || 0;
+      const printTimeMinutes = parseInt(formData.print_time) || 0;
+      const printTimeHours = printTimeMinutes / 60;
 
       if (weightGrams <= 0) {
         throw new Error('Weight must be greater than 0');
       }
 
-      if (printTime <= 0) {
+      if (printTimeMinutes <= 0) {
         throw new Error('Print time must be greater than 0');
       }
 
       // Calculate costs
       const filamentCost = weightGrams * (selectedFilament.price_per_kg / 1000);
       // Convert watts to kilowatt-hours: watts / 1000 = kilowatts, then multiply by hours
-      const powerUsageInKwh = (selectedPrinter.power_usage / 1000) * printTime;
+      const powerUsageInKwh = (selectedPrinter.power_usage / 1000) * printTimeHours;
       const electricityCost = powerUsageInKwh * parseFloat(settings.electricity_cost_per_kwh);
-      const depreciationCost = printTime * selectedPrinter.depreciation_per_hour;
+      const depreciationCost = printTimeHours * selectedPrinter.depreciation_per_hour;
       
       const subtotal = filamentCost + electricityCost + depreciationCost;
       const markup = subtotal * (parseFloat(settings.default_markup_percent) / 100);
@@ -134,7 +136,8 @@ function QuickQuote() {
         },
         printer: {
           name: selectedPrinter.name,
-          print_time: printTime
+          print_time: printTimeMinutes,
+          print_time_hours: printTimeHours
         },
         electricity_cost: electricityCost,
         depreciation_cost: depreciationCost,
@@ -172,7 +175,7 @@ function QuickQuote() {
         title: `${quoteNumberData.quote_number} - Quick Quote`,
         customer_name: formData.customer_name,
         date: new Date().toISOString().split('T')[0],
-        notes: `Quick quote for ${quoteResult.filament.weight_grams}g of ${quoteResult.filament.name}, printed on ${quoteResult.printer.name} for ${quoteResult.printer.print_time} hours.`,
+        notes: `Quick quote for ${quoteResult.filament.weight_grams}g of ${quoteResult.filament.name}, printed on ${quoteResult.printer.name} for ${quoteResult.printer.print_time_hours.toFixed(2)} hours.`,
         markup_percent: quoteResult.markup_percent,
         total_cost: quoteResult.total,
         is_quick_quote: true,
@@ -322,17 +325,13 @@ function QuickQuote() {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <TimeInput
                 name="print_time"
                 label="Print Time"
-                type="number"
                 value={formData.print_time}
                 onChange={handleInputChange}
                 fullWidth
                 required
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">hours</InputAdornment>,
-                }}
                 disabled={printers.length === 0}
               />
             </Grid>
@@ -387,7 +386,7 @@ function QuickQuote() {
                 Printer: {quoteResult.printer.name}
               </Typography>
               <Typography variant="body2">
-                Print Time: {quoteResult.printer.print_time} hours
+                Print Time: {quoteResult.printer.print_time_hours.toFixed(2)} hours
               </Typography>
               <Typography variant="body2">
                 Electricity Cost: {settings.currency_symbol}{quoteResult.electricity_cost.toFixed(2)}

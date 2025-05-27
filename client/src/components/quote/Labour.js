@@ -7,6 +7,7 @@ import {
   InputAdornment
 } from '@mui/material';
 import SettingsContext from '../../context/SettingsContext';
+import TimeInput from '../common/TimeInput';
 
 function Labour({ 
   labour, 
@@ -65,59 +66,39 @@ function Labour({
       </Typography>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={3}>
-          <TextField
+          <TimeInput
             name="design_minutes"
-            label="Design"
-            type="number"
+            label="Design Time"
             value={labour.design_minutes}
             onChange={handleInputChange}
             fullWidth
-            InputProps={{
-              endAdornment: <InputAdornment position="end">min</InputAdornment>,
-              inputProps: { min: 0 }
-            }}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <TextField
+          <TimeInput
             name="preparation_minutes"
-            label="Preparation"
-            type="number"
+            label="Preparation Time"
             value={labour.preparation_minutes}
             onChange={handleInputChange}
             fullWidth
-            InputProps={{
-              endAdornment: <InputAdornment position="end">min</InputAdornment>,
-              inputProps: { min: 0 }
-            }}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <TextField
+          <TimeInput
             name="post_processing_minutes"
-            label="Post Processing"
-            type="number"
+            label="Post Processing Time"
             value={labour.post_processing_minutes}
             onChange={handleInputChange}
             fullWidth
-            InputProps={{
-              endAdornment: <InputAdornment position="end">min</InputAdornment>,
-              inputProps: { min: 0 }
-            }}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <TextField
+          <TimeInput
             name="other_minutes"
-            label="Other"
-            type="number"
+            label="Other Time"
             value={labour.other_minutes}
             onChange={handleInputChange}
             fullWidth
-            InputProps={{
-              endAdornment: <InputAdornment position="end">min</InputAdornment>,
-              inputProps: { min: 0 }
-            }}
           />
         </Grid>
         <Grid item xs={12} sm={6}>
