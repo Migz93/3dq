@@ -36,6 +36,7 @@ function QuoteBuilder() {
   
   // Step state
   const [activeStep, setActiveStep] = useState(0);
+  const [maxStepReached, setMaxStepReached] = useState(0);
   const steps = ['Job Info', 'Filament', 'Hardware', 'Print Setup', 'Labour', 'Summary'];
   
   // Data states
@@ -237,11 +238,27 @@ function QuoteBuilder() {
 
   // Handle step navigation
   const handleNext = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    setActiveStep((prevActiveStep) => {
+      const nextStep = prevActiveStep + 1;
+      // Update the max step reached if we're going to a new step
+      if (nextStep > maxStepReached) {
+        setMaxStepReached(nextStep);
+      }
+      return nextStep;
+    });
   };
 
   const handleBack = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
+  };
+  
+  // Navigate directly to a specific step
+  const handleStepClick = (stepIndex) => {
+    // When editing an existing quote, allow navigation to any step
+    // For new quotes, allow navigation to any step we've previously reached
+    if (isEditMode || stepIndex <= maxStepReached) {
+      setActiveStep(stepIndex);
+    }
   };
 
   // Validate current step
@@ -432,17 +449,64 @@ function QuoteBuilder() {
           activeStep={activeStep} 
           sx={{ 
             mb: 4,
-            minWidth: { xs: 600, md: '100%' } // Force minimum width on mobile
+            minWidth: { xs: 600, md: '100%' }, // Force minimum width on mobile
+            '& .MuiStepLabel-root': {
+              ...(isEditMode && {
+                // In edit mode, make ALL steps look accessible with primary.light color
+                '& .MuiStepIcon-root': {
+                  '&:not(.Mui-active):not(.Mui-completed)': {
+                    color: 'primary.light'
+                  }
+                }
+              }),
+              ...(!isEditMode && {
+                // In new quote mode, only color steps we've reached
+                '& .MuiStepIcon-root': {
+                  '&:not(.Mui-active):not(.Mui-completed)': {
+                    // Apply conditional styling based on index
+                    '&.MuiStepIcon-root[data-reached="true"]': {
+                      color: 'primary.light'
+                    }
+                  }
+                }
+              })
+            }
           }}
         >
-          {steps.map((label) => (
+          {steps.map((label, index) => (
             <Step key={label}>
               <StepLabel 
                 sx={{
                   '& .MuiStepLabel-labelContainer': {
                     // Hide text on very small screens
-                    display: { xs: 'none', sm: 'block' }
+                    display: { xs: 'none', sm: 'block' },
+                    // Make future step labels slightly darker than default if they're accessible
+                    ...((isEditMode || (index <= maxStepReached && index > activeStep)) && {
+                      color: 'text.primary'
+                    })
+                  },
+                  ...((isEditMode || index <= maxStepReached) && {
+                    cursor: 'pointer',
+                    '&:hover': {
+                      '& .MuiStepLabel-label': {
+                        color: 'primary.main'
+                      }
+                    }
+                  }),
+                  // Add custom styling for the step icon
+                  '& .MuiStepIcon-root': {
+                    // This will be used by our CSS selector
+                    ...(index <= maxStepReached && {
+                      '&::after': {
+                        content: '"reached"'
+                      }
+                    })
                   }
+                }}
+                onClick={() => handleStepClick(index)}
+                // Add a data attribute to indicate if this step has been reached
+                StepIconProps={{
+                  'data-reached': index <= maxStepReached
                 }}
               >
                 {label}
