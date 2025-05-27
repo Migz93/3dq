@@ -108,26 +108,30 @@ function QuoteBuilder() {
 
         setLoading(false);
 
-        // Initialize with first filament if available
-        if (filamentsData.length > 0) {
-          const firstFilament = filamentsData[0];
-          setQuoteFilaments([{
-            id: Date.now(),
-            filament_id: firstFilament.id,
-            filament_name: firstFilament.name,
-            filament_price_per_gram: firstFilament.price_per_kg / 1000,
-            grams_used: 0,
-            total_cost: 0
-          }]);
-        }
+        // Only initialize with default values if we're not in edit mode
+        // Edit mode will load the quote data in a separate useEffect
+        if (!isEditMode) {
+          // Initialize with first filament if available
+          if (filamentsData.length > 0) {
+            const firstFilament = filamentsData[0];
+            setQuoteFilaments([{
+              id: Date.now(),
+              filament_id: firstFilament.id,
+              filament_name: firstFilament.name,
+              filament_price_per_gram: firstFilament.price_per_kg / 1000,
+              grams_used: 0,
+              total_cost: 0
+            }]);
+          }
 
-        // Initialize with first printer if available
-        if (printersData.length > 0) {
-          setPrintSetup(prev => ({
-            ...prev,
-            printer_id: printersData[0].id,
-            printer_name: printersData[0].name
-          }));
+          // Initialize with first printer if available
+          if (printersData.length > 0) {
+            setPrintSetup(prev => ({
+              ...prev,
+              printer_id: printersData[0].id,
+              printer_name: printersData[0].name
+            }));
+          }
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -137,7 +141,7 @@ function QuoteBuilder() {
     };
 
     fetchData();
-  }, []);
+  }, [isEditMode]);
   
   // Fetch quote data if in edit mode
   useEffect(() => {

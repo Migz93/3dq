@@ -98,12 +98,16 @@ function FilamentUsage({
     }));
   };
 
-  // Ensure we always have at least one filament
+  // Only add a default filament if we don't have any filaments yet
   React.useEffect(() => {
-    if (quoteFilaments.length === 0 && filaments.length > 0) {
-      addFilament();
+    // Skip if we already have filaments or if there are no filaments to add
+    if (quoteFilaments.length > 0 || filaments.length === 0) {
+      return;
     }
-  }, [quoteFilaments.length, filaments.length]);
+    
+    // Only add a default filament if the list is empty
+    addFilament();
+  }, [quoteFilaments.length, filaments.length, addFilament]);
 
   // Calculate total filament cost
   const totalFilamentCost = quoteFilaments.reduce((sum, f) => sum + f.total_cost, 0);
