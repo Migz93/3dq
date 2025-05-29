@@ -56,7 +56,9 @@ router.post('/', (req, res) => {
       price_per_kg,
       color,
       link,
-      status
+      status,
+      spoolman_id,
+      spoolman_synced
     } = req.body;
 
     // Validate required fields
@@ -67,8 +69,9 @@ router.post('/', (req, res) => {
     const stmt = db.prepare(`
       INSERT INTO filaments (
         name, type, diameter, spool_weight, spool_price, 
-        density, price_per_kg, color, link, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        density, price_per_kg, color, link, status,
+        spoolman_id, spoolman_synced
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const info = stmt.run(
@@ -81,7 +84,9 @@ router.post('/', (req, res) => {
       price_per_kg,
       color,
       link || null,
-      status || 'Active'
+      status || 'Active',
+      spoolman_id || null,
+      spoolman_synced || 0
     );
 
     const filament = db.prepare('SELECT * FROM filaments WHERE id = ?').get(info.lastInsertRowid);
@@ -106,7 +111,9 @@ router.put('/:id', (req, res) => {
       price_per_kg,
       color,
       link,
-      status
+      status,
+      spoolman_id,
+      spoolman_synced
     } = req.body;
 
     // Validate required fields
@@ -133,6 +140,8 @@ router.put('/:id', (req, res) => {
         color = ?,
         link = ?,
         status = ?,
+        spoolman_id = ?,
+        spoolman_synced = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
@@ -148,6 +157,8 @@ router.put('/:id', (req, res) => {
       color,
       link || null,
       status || 'Active',
+      spoolman_id || null,
+      spoolman_synced !== undefined ? spoolman_synced : filament.spoolman_synced,
       req.params.id
     );
 

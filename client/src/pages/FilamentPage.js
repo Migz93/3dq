@@ -26,7 +26,8 @@ import {
   InputAdornment,
   Tabs,
   Tab,
-  Tooltip
+  Tooltip,
+  Alert
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -45,6 +46,8 @@ function FilamentPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentFilament, setCurrentFilament] = useState(null);
   const [tabValue, setTabValue] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null);
   
   const { settings } = useContext(SettingsContext);
 
@@ -220,7 +223,7 @@ function FilamentPage() {
     }
   };
 
-  // Handle filament archive/unarchive
+  // Handle toggle archive/unarchive
   const handleToggleArchive = async (filament) => {
     try {
       const response = await fetch(`/api/filaments/${filament.id}/toggle-status`, {
@@ -228,16 +231,59 @@ function FilamentPage() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to update filament status');
+        throw new Error('Failed to toggle filament status');
       }
       
-      const updatedFilament = await response.json();
+      const data = await response.json();
       
       // Update filament in list
-      setFilaments(filaments.map(f => f.id === updatedFilament.id ? updatedFilament : f));
+      setFilaments(filaments.map(f => f.id === data.id ? data : f));
     } catch (error) {
-      console.error('Error updating filament status:', error);
+      console.error('Error toggling filament status:', error);
       setError(error.message);
+    }
+  };
+
+  // Sync spools from Spoolman
+  const syncSpoolmanSpools = async () => {
+    setSyncing(true);
+    setSyncStatus(null);
+    
+    try {
+      const response = await fetch('/api/spoolman/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSyncStatus({ 
+          success: true, 
+          message: `${data.message}. Added: ${data.added}, Updated: ${data.updated}` 
+        });
+        
+        // Refresh filaments list after successful sync
+        const filamentsResponse = await fetch('/api/filaments');
+        if (filamentsResponse.ok) {
+          const filamentsData = await filamentsResponse.json();
+          setFilaments(filamentsData);
+        }
+      } else {
+        setSyncStatus({ success: false, message: data.error || 'Failed to sync spools from Spoolman' });
+      }
+    } catch (error) {
+      console.error('Error syncing spools from Spoolman:', error);
+      setSyncStatus({ success: false, message: error.message });
+    } finally {
+      setSyncing(false);
+      
+      // Clear sync status after 5 seconds
+      setTimeout(() => {
+        setSyncStatus(null);
+      }, 5000);
     }
   };
 
@@ -269,14 +315,37 @@ function FilamentPage() {
         <Typography variant="h4" component="h1">
           Filament Management
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddFilament}
-        >
-          Add Filament
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {settings && settings.spoolman_sync_enabled === 'true' && (
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={syncSpoolmanSpools}
+              disabled={syncing}
+            >
+              {syncing ? 'Syncing...' : 'Sync with Spoolman'}
+            </Button>
+          )}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleAddFilament}
+          >
+            Add Filament
+          </Button>
+        </Box>
       </Box>
+      
+      {syncStatus && (
+        <Box sx={{ mb: 2 }}>
+          <Alert 
+            severity={syncStatus.success ? "success" : "error"}
+            onClose={() => setSyncStatus(null)}
+          >
+            {syncStatus.message}
+          </Alert>
+        </Box>
+      )}
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange}>

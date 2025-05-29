@@ -84,6 +84,7 @@ const createHardwareRoutes = require('./routes/hardware');
 const createQuoteRoutes = require('./routes/quotes');
 const createQuickQuoteRoutes = require('./routes/quick_quote');
 const createSettingsRoutes = require('./routes/settings');
+const createSpoolmanRoutes = require('./routes/spoolman');
 
 // Initialize routes with the database instance
 const filamentRoutes = createFilamentRoutes(db);
@@ -92,6 +93,7 @@ const hardwareRoutes = createHardwareRoutes(db);
 const quoteRoutes = createQuoteRoutes(db);
 const quickQuoteRoutes = createQuickQuoteRoutes(db);
 const settingsRoutes = createSettingsRoutes(db);
+const spoolmanRoutes = createSpoolmanRoutes(db);
 
 // Use routes
 app.use('/api/filaments', filamentRoutes);
@@ -100,6 +102,7 @@ app.use('/api/hardware', hardwareRoutes);
 app.use('/api/quotes', quoteRoutes);
 app.use('/api/quick-quote', quickQuoteRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/spoolman', spoolmanRoutes);
 
 // Serve static assets in production
 app.use(express.static(path.join(__dirname, 'client/build')));

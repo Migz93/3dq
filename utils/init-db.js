@@ -41,6 +41,8 @@ function initDb() {
       color TEXT NOT NULL,
       link TEXT,
       status TEXT NOT NULL DEFAULT 'Active',
+      spoolman_id INTEGER,
+      spoolman_synced BOOLEAN DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
@@ -162,7 +164,9 @@ function initDb() {
     { key: 'currency_symbol', value: '£' },
     { key: 'quote_prefix', value: '3DQ' },
     { key: 'accent_color', value: '#3498db' },
-    { key: 'company_name', value: 'Prints Inc' }
+    { key: 'company_name', value: 'Prints Inc' },
+    { key: 'spoolman_sync_enabled', value: 'false' },
+    { key: 'spoolman_url', value: 'http://localhost:7912' }
   ];
 
   const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');

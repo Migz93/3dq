@@ -11,7 +11,10 @@ import {
   InputAdornment,
   Snackbar,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Switch,
+  FormControlLabel,
+  Divider
 } from '@mui/material';
 import SettingsContext from '../context/SettingsContext';
 
@@ -24,7 +27,9 @@ function SettingsPage() {
     currency_symbol: '',
     quote_prefix: '',
     accent_color: '',
-    company_name: ''
+    company_name: '',
+    spoolman_sync_enabled: 'false',
+    spoolman_url: 'http://localhost:7912'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,7 +46,9 @@ function SettingsPage() {
         currency_symbol: settings.currency_symbol || '',
         quote_prefix: settings.quote_prefix || '',
         accent_color: settings.accent_color || '#3498db',
-        company_name: settings.company_name || 'Prints Inc'
+        company_name: settings.company_name || 'Prints Inc',
+        spoolman_sync_enabled: settings.spoolman_sync_enabled || 'false',
+        spoolman_url: settings.spoolman_url || 'http://localhost:7912'
       });
       setLoading(false);
     }
@@ -51,6 +58,78 @@ function SettingsPage() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  // Handle switch change
+  const handleSwitchChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData({ ...formData, [name]: checked.toString() });
+  };
+  
+  // Test Spoolman connection
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(null);
+  
+  const testSpoolmanConnection = async () => {
+    setTestingConnection(true);
+    setConnectionStatus(null);
+    
+    try {
+      const response = await fetch('/api/spoolman/test-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: formData.spoolman_url }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setConnectionStatus({ success: true, message: data.message });
+      } else {
+        setConnectionStatus({ success: false, message: data.error || 'Failed to connect to Spoolman' });
+      }
+    } catch (error) {
+      console.error('Error testing Spoolman connection:', error);
+      setConnectionStatus({ success: false, message: error.message });
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+  
+  // Sync spools from Spoolman
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null);
+  
+  const syncSpoolmanSpools = async () => {
+    setSyncing(true);
+    setSyncStatus(null);
+    
+    try {
+      const response = await fetch('/api/spoolman/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSyncStatus({ 
+          success: true, 
+          message: `${data.message}. Added: ${data.added}, Updated: ${data.updated}` 
+        });
+      } else {
+        setSyncStatus({ success: false, message: data.error || 'Failed to sync spools from Spoolman' });
+      }
+    } catch (error) {
+      console.error('Error syncing spools from Spoolman:', error);
+      setSyncStatus({ success: false, message: error.message });
+    } finally {
+      setSyncing(false);
+    }
   };
 
   // Handle form submission
@@ -209,31 +288,87 @@ function SettingsPage() {
                   helperText="App accent color (requires page refresh to fully apply)"
                 />
               </Grid>
+            </Grid>
+          </Box>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mb: 4, backgroundColor: 'background.paper' }}>
+        <CardHeader title="Spoolman Integration" />
+        <CardContent>
+          <Box component="form" onSubmit={handleSubmit}>
+            <Grid container spacing={3}>
               <Grid item xs={12}>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      name="spoolman_sync_enabled"
+                      checked={formData.spoolman_sync_enabled === 'true'}
+                      onChange={handleSwitchChange}
+                      color="primary"
+                    />
+                  }
+                  label="Sync Filament With Spoolman Spools"
+                />
+              </Grid>
+              
+              <Grid item xs={12} container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={8}>
+                  <TextField
+                    name="spoolman_url"
+                    label="Spoolman URL"
+                    value={formData.spoolman_url}
+                    onChange={handleInputChange}
+                    fullWidth
+                    required={formData.spoolman_sync_enabled === 'true'}
+                    helperText="URL to your Spoolman instance (e.g., http://localhost:7912)"
+                    disabled={formData.spoolman_sync_enabled !== 'true'}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
                   <Button
-                    type="submit"
                     variant="contained"
-                    disabled={saving}
-                    sx={{ minWidth: 120 }}
+                    color="primary"
+                    type="submit"
+                    disabled={saving || formData.spoolman_sync_enabled !== 'true'}
+                    sx={{ mt: 1 }}
                   >
                     {saving ? <CircularProgress size={24} /> : 'Save Settings'}
                   </Button>
-                </Box>
+                </Grid>
+              </Grid>
+              
+              <Grid item xs={12}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={testSpoolmanConnection}
+                  disabled={testingConnection || !formData.spoolman_url || formData.spoolman_sync_enabled !== 'true'}
+                  sx={{ mt: 1 }}
+                >
+                  {testingConnection ? <CircularProgress size={24} /> : 'Test Connection'}
+                </Button>
+                
+                {connectionStatus && (
+                  <Alert 
+                    severity={connectionStatus.success ? "success" : "error"}
+                    sx={{ mt: 1 }}
+                  >
+                    {connectionStatus.message}
+                  </Alert>
+                )}
               </Grid>
             </Grid>
           </Box>
         </CardContent>
       </Card>
 
-      {/* Success message */}
       <Snackbar open={success} autoHideDuration={6000} onClose={handleCloseSuccess}>
         <Alert onClose={handleCloseSuccess} severity="success" sx={{ width: '100%' }}>
           Settings saved successfully!
         </Alert>
       </Snackbar>
 
-      {/* Error message */}
       {error && (
         <Alert severity="error" sx={{ mt: 2 }}>
           Error: {error}

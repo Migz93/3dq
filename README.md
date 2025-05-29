@@ -17,6 +17,7 @@
 
 ### Resource Management
 - **Filament Management**: Add, edit, and archive filament types with pricing
+- **Spoolman Integration**: Sync filaments with Spoolman, a filament management system
 - **Printer Management**: Configure your printers with depreciation and power usage calculations
 - **Hardware Management**: Track additional components used in prints (screws, magnets, etc.)
 
@@ -26,6 +27,7 @@
 - **Company Branding**: Set your company name for invoices (default: "Prints Inc")
 - **Quote Numbering**: Automatic sequential quote number generation (e.g., 3DQ0001)
 - **UI Customization**: Set accent color for the application
+- **External Integrations**: Configure Spoolman URL for filament synchronization
 
 ## Getting Started
 
@@ -84,6 +86,25 @@ For detailed installation instructions, see the [Technical README](TECHNICAL_REA
 
 ## Usage Guide
 
+### Spoolman Integration
+
+3DQ now integrates with [Spoolman](https://github.com/Donkie/Spoolman), a filament management system for 3D printing. This integration allows you to sync your filament spools from Spoolman directly into 3DQ, saving you time and ensuring consistency between systems.
+
+To use the Spoolman integration:
+
+1. Go to the Settings page and enable "Sync Filament With Spoolman Spools"
+2. Enter your Spoolman URL (e.g., `http://localhost:7912` or any URL where your Spoolman instance is hosted)
+3. Save the settings
+4. Go to the Filaments page and click the "Sync with Spoolman" button
+5. Your filaments will be imported from Spoolman with all relevant details (name, type, weight, price, etc.)
+
+The integration preserves all the important data from Spoolman including:
+- Vendor information
+- Material type
+- Color (including hex color codes)
+- Weight and price information
+- Density and diameter
+
 ### Initial Setup
 
 1. First, configure your settings (Settings page)
@@ -93,7 +114,7 @@ For detailed installation instructions, see the [Technical README](TECHNICAL_REA
    - Choose your currency symbol
 
 2. Add your resources:
-   - **Filaments**: Add your filament types with costs per kg
+   - **Filaments**: Add your filament types with costs per kg (or sync from Spoolman)
    - **Printers**: Configure your printers with purchase cost, estimated lifespan, and power consumption
    - **Hardware**: Add any hardware components you frequently use in prints
 

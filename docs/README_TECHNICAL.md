@@ -17,6 +17,7 @@ This document provides technical details about the 3DQ application architecture,
 - **Server**: Express.js (Node.js)
 - **Database**: SQLite with better-sqlite3
 - **API**: RESTful API endpoints
+- **External Integrations**: Spoolman API for filament synchronization
 
 ## Project Structure
 
@@ -36,6 +37,9 @@ This document provides technical details about the 3DQ application architecture,
 │   ├── 3dq.sqlite         # SQLite database
 │   └── quotes/            # Directory for data persistence
 ├── routes/                 # Express API routes
+│   ├── filaments.js      # Filament management routes
+│   ├── spoolman.js       # Spoolman integration routes
+│   └── ...               # Other API routes
 ├── utils/                  # Utility scripts
 │   └── init-db.js         # Database initialization script with example data
 ├── server.js              # Express server entry point
@@ -60,6 +64,8 @@ Default settings include:
 - `quote_prefix`: Prefix used for quote numbers
 - `accent_color`: UI accent color
 - `company_name`: Company name used on invoices (default: "Prints Inc")
+- `spoolman_sync_enabled`: Whether Spoolman integration is enabled (default: false)
+- `spoolman_url`: URL to the Spoolman instance (default: "http://localhost:7912")
 
 ### Filaments Table
 ```sql
@@ -75,6 +81,8 @@ CREATE TABLE IF NOT EXISTS filaments (
   color TEXT NOT NULL,
   link TEXT,
   status TEXT NOT NULL DEFAULT 'Active',
+  spoolman_id INTEGER,
+  spoolman_synced BOOLEAN DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
@@ -187,6 +195,43 @@ CREATE TABLE IF NOT EXISTS quote_labour (
   FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE
 )
 ```
+
+## External Integrations
+
+### Spoolman Integration
+
+3DQ integrates with [Spoolman](https://github.com/Donkie/Spoolman), a filament management system for 3D printing. This integration allows users to synchronize filament data from Spoolman to 3DQ.
+
+#### API Integration
+
+The integration works through the Spoolman API:
+
+- **Endpoint**: `GET {spoolman_url}/api/v1/spool`
+- **Authentication**: None required
+- **Response Format**: JSON array of spool objects
+
+#### Database Changes
+
+To support Spoolman integration, the following changes were made to the database schema:
+
+1. Added fields to the `filaments` table:
+   - `spoolman_id`: Stores the ID of the corresponding spool in Spoolman
+   - `spoolman_synced`: Boolean flag indicating if the filament was synced from Spoolman
+
+2. Added settings to the `settings` table:
+   - `spoolman_sync_enabled`: Whether Spoolman integration is enabled
+   - `spoolman_url`: URL to the Spoolman instance
+
+#### Implementation Details
+
+- **Routes**: `/api/spoolman` handles all Spoolman-related API endpoints
+  - `GET /status`: Returns the current Spoolman integration status
+  - `POST /test-connection`: Tests the connection to the Spoolman instance
+  - `POST /sync`: Syncs spools from Spoolman to 3DQ
+
+- **UI Components**: 
+  - Settings page has controls for enabling/disabling Spoolman integration and setting the URL
+  - Filaments page has a "Sync with Spoolman" button to trigger synchronization
 
 ## Default Data and Examples
 
