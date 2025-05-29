@@ -26,9 +26,9 @@ import {
 import {
   FileCopy as FileCopyIcon,
   Delete as DeleteIcon,
-  Description as InvoiceIcon,
   Edit as EditIcon
 } from '@mui/icons-material';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import SettingsContext from '../context/SettingsContext';
 
 function ViewQuote() {
@@ -119,9 +119,8 @@ function ViewQuote() {
     }
   };
 
-  // Generate invoice using print-friendly page
   const generateInvoice = (type) => {
-    window.open(`/print-invoice.html?id=${id}&type=${type}`, '_blank');
+    window.open(`/api/quotes/${id}/invoice/${type}`, '_blank');
   };
 
   if (loading) {
@@ -167,30 +166,14 @@ function ViewQuote() {
           {quote.title}
         </Typography>
         <Box>
-          <Button
-            variant="outlined"
-            startIcon={<InvoiceIcon />}
-            onClick={() => generateInvoice('client')}
-            sx={{ mr: 1 }}
-          >
+          <Button variant="contained" component={Link} to={`/quotes/${id}/edit`} startIcon={<EditIcon />}>
+            Edit Quote
+          </Button>
+          <Button variant="outlined" onClick={() => generateInvoice('client')} startIcon={<PictureAsPdfIcon />}>
             Client Invoice
           </Button>
-          <Button
-            variant="outlined"
-            startIcon={<InvoiceIcon />}
-            onClick={() => generateInvoice('internal')}
-            sx={{ mr: 1 }}
-          >
+          <Button variant="outlined" onClick={() => generateInvoice('internal')} startIcon={<PictureAsPdfIcon />}>
             Internal Invoice
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<EditIcon />}
-            component={Link}
-            to={`/quote/edit/${id}`}
-            sx={{ mr: 1 }}
-          >
-            Edit
           </Button>
           <Button
             variant="outlined"

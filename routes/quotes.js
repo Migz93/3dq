@@ -430,469 +430,284 @@ router.post('/quick', (req, res) => {
   }
 });
 
-// Generate an HTML invoice for a quote (internal or client)
-router.get('/:id/invoice/:type', (req, res) => {
-  try {
-    const { id, type } = req.params;
-    
-    if (type !== 'internal' && type !== 'client') {
-      return res.status(400).json({ error: 'Invalid invoice type. Must be "internal" or "client"' });
-    }
-    
-    // Get quote data
-    const quote = db.prepare('SELECT * FROM quotes WHERE id = ?').get(id);
-    
-    if (!quote) {
-      return res.status(404).json({ error: 'Quote not found' });
-    }
-    
-    // Get filaments used in this quote
-    const filaments = db.prepare('SELECT * FROM quote_filaments WHERE quote_id = ?').all(id);
-    
-    // Get hardware used in this quote
-    const hardware = db.prepare('SELECT * FROM quote_hardware WHERE quote_id = ?').all(id);
-    
-    // Get print setup for this quote
-    const printSetup = db.prepare('SELECT * FROM quote_print_setup WHERE quote_id = ?').get(id);
-    
-    // Get labour for this quote
-    const labour = db.prepare('SELECT * FROM quote_labour WHERE quote_id = ?').get(id);
-    
-    // Get settings
-    const currencySetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('currency_symbol');
-    const companyNameSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('company_name');
-    
-    const currencySymbol = currencySetting ? currencySetting.value : '$';
-    const companyName = companyNameSetting ? companyNameSetting.value : 'Prints Inc';
-    
-    // Calculate totals
-    const filamentTotal = filaments.reduce((sum, item) => sum + item.total_cost, 0);
-    const hardwareTotal = hardware.reduce((sum, item) => sum + item.total_cost, 0);
-    const printingTotal = printSetup ? (printSetup.power_cost + printSetup.depreciation_cost) : 0;
-    const labourTotal = labour ? labour.total_cost : 0;
-    
-    const subtotal = filamentTotal + hardwareTotal + printingTotal + labourTotal;
-    const discountAmount = quote.discount_percent ? (subtotal * (quote.discount_percent / 100)) : 0;
-    const markupAmount = (subtotal - discountAmount) * (quote.markup_percent / 100);
-    const total = subtotal - discountAmount + markupAmount;
-    
-    // Format currency
-    const formatCurrency = (value) => {
-      return `${currencySymbol}${value.toFixed(2)}`;
-    };
-    
-    // Format time
-    const formatTime = (minutes) => {
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      return `${hours}h ${mins}m`;
-    };
-    
-    // Generate HTML based on invoice type
-    let html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${type === 'internal' ? 'Internal' : 'Client'} Invoice - ${quote.quote_number}</title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #fff;
-            color: #333;
-          }
-          
-          .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: white;
-          }
-          
-          .invoice-header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #3498db;
-          }
-          
-          .blue-divider {
-            border-bottom: 2px solid #3498db;
-            margin: 20px 0;
-          }
-          
-          .description-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-          }
-          
-          .description-table th {
-            background-color: #e6f2ff;
-            color: #333;
-            font-size: 1.2em;
-            padding: 12px 15px;
-            text-align: left;
-            border: 1px solid #b3d9ff;
-          }
-          
-          .description-table td {
-            padding: 10px 15px;
-            text-align: left;
-            border: 1px solid #b3d9ff;
-          }
-          
-          .small-blue-divider {
-            border-bottom: 1px solid #3498db;
-            margin: 15px 0;
-          }
-          
-          .info-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-          }
-          
-          .info-table td {
-            padding: 8px;
-            border: none;
-          }
-          
-          .invoice-header h1 {
-            color: #3498db;
-            margin-bottom: 5px;
-          }
-          
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-          }
-          
-          th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-          }
-          
-          th {
-            background-color: #3498db;
-            color: white;
-            font-weight: 500;
-          }
-          
-          .total-row {
-            font-weight: bold;
-            background-color: #f0f7ff;
-          }
-          
-          .total-row td {
-            border-top: 2px solid #3498db;
-          }
-          
-          .section-title {
-            margin-top: 30px;
-            margin-bottom: 15px;
-            color: #3498db;
-            border-left: 4px solid #3498db;
-            padding-left: 10px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="invoice-header">
-            <h1>${companyName} - Invoice</h1>
-          </div>
-          
-          <div class="blue-divider"></div>
-          
-          <table class="info-table">
-            <tr>
-              <td><strong>Quote #:</strong> ${quote.quote_number}</td>
-              <td style="text-align: right;"><strong>Date:</strong> ${quote.date}</td>
-            </tr>
-            <tr>
-              <td><strong>Model:</strong> ${quote.title}</td>
-              <td style="text-align: right;"><strong>Customer:</strong> ${quote.customer_name}</td>
-            </tr>
-          </table>
-          
-          <div class="blue-divider"></div>
-    `;
-    
-    // Add description table
-    html += `
-          <table class="description-table">
-            <thead>
-              <tr>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-    `;
-    
-    // Print Duration
-    if (printSetup) {
-      html += `
-              <tr>
-                <td>Print Duration - ${(printSetup.print_time / 60).toFixed(2)} hours</td>
-              </tr>
-      `;
-    }
-    
-    // Filaments
-    filaments.forEach(filament => {
-      html += `
-              <tr>
-                <td>${filament.filament_name} - ${filament.grams_used.toFixed(2)}g</td>
-              </tr>
-      `;
-    });
-    
-    // Hardware
-    hardware.forEach(item => {
-      html += `
-              <tr>
-                <td>${item.hardware_name}</td>
-              </tr>
-      `;
-    });
-    
-    // Labour (just the word if any labour was recorded)
-    if (labour && (labour.design_minutes > 0 || labour.preparation_minutes > 0 || 
-                   labour.post_processing_minutes > 0 || labour.other_minutes > 0)) {
-      html += `
-              <tr>
-                <td>Labour</td>
-              </tr>
-      `;
-    }
-    
-    html += `
-            </tbody>
-          </table>
-    `;
-    
-    // Add blue divider
-    html += `
-          <div class="blue-divider"></div>
-    `;
-    
-    // Add pricing section (right-aligned)
-    html += `
-          <div style="text-align: right;">
-    `;
-    
-    if (quote.discount_percent && quote.discount_percent > 0) {
-      html += `
-            <p><strong>Subtotal:</strong> ${formatCurrency(subtotal)}</p>
-            <p><strong>Discount (${quote.discount_percent}%):</strong> -${formatCurrency(discountAmount)}</p>
-      `;
-    }
-    
-    // Only show markup in internal invoice
-    if (type === 'internal') {
-      html += `
-            <p><strong>Markup (${quote.markup_percent}%):</strong> ${formatCurrency(markupAmount)}</p>
-      `;
-    }
-    
-    html += `
-            <p style="font-size: 1.2em;"><strong>Total: ${formatCurrency(total)}</strong></p>
-          </div>
-    `;
-    
-    // Add notes if available for client invoice
-    if (type === 'client' && quote.notes) {
-      html += `
-        <h2 class="section-title">Notes</h2>
-        <p>${quote.notes}</p>
-      `;
-    }
-    
-    // Add detailed sections for internal invoice
-    if (type === 'internal') {
-      // Add detailed sections for internal invoice
-      // Materials section
-      if (filaments.length > 0) {
-        html += `
-          <h2 class="section-title">Materials</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Material</th>
-                <th>Amount (g)</th>
-                <th>Price/g</th>
-                <th>Cost</th>
-              </tr>
-            </thead>
-            <tbody>
+
+
+
+  // Generate an HTML invoice for a quote (internal or client)
+  router.get('/:id/invoice/:type', (req, res) => {
+    try {
+      const { id, type } = req.params;
+
+      if (type !== 'internal' && type !== 'client') {
+        return res.status(400).json({ error: 'Invalid invoice type. Must be "internal" or "client"' });
+      }
+
+      // Fetch quote data
+      const quote = db.prepare('SELECT * FROM quotes WHERE id = ?').get(id);
+      if (!quote) {
+        return res.status(404).json({ error: 'Quote not found' });
+      }
+
+      // Fetch related data
+      const filaments = db.prepare('SELECT * FROM quote_filaments WHERE quote_id = ?').all(id);
+      const hardware = db.prepare('SELECT * FROM quote_hardware WHERE quote_id = ?').all(id);
+      const printSetup = db.prepare('SELECT * FROM quote_print_setup WHERE quote_id = ?').get(id);
+      const labour = db.prepare('SELECT * FROM quote_labour WHERE quote_id = ?').get(id);
+
+      // Fetch settings
+      const currencySetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('currency_symbol');
+      const companyNameSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('company_name');
+      const labourRateSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('labour_rate_per_hour');
+      const currencySymbol = currencySetting ? currencySetting.value : '$';
+      const companyName = companyNameSetting ? companyNameSetting.value : 'Prints Inc';
+      const globalLabourRate = labourRateSetting ? parseFloat(labourRateSetting.value) : 0;
+
+      // Helper function to format currency
+      const formatCurrency = (value) => {
+        return `${currencySymbol}${Number(value).toFixed(2)}`;
+      };
+
+      // Helper function to format time from minutes to Xh Ym string
+      const formatTime = (minutes) => {
+        if (minutes === null || minutes === undefined) return '0h 0m';
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return `${hours}h ${mins}m`;
+      };
+
+      let html = '';
+
+      // --- HTML Generation Logic --- 
+      if (type === 'client') {
+        // Calculate totals for client invoice
+        const filamentTotal = filaments.reduce((sum, item) => sum + item.total_cost, 0);
+        const hardwareTotal = hardware.reduce((sum, item) => sum + item.total_cost, 0);
+        const printingCosts = printSetup ? (printSetup.power_cost + printSetup.depreciation_cost) : 0;
+        const labourTotal = labour ? labour.total_cost : 0;
+        
+        const subtotalPreMarkup = filamentTotal + hardwareTotal + printingCosts + labourTotal;
+        const markupAmount = subtotalPreMarkup * (quote.markup_percent / 100);
+        const subtotalPostMarkup = subtotalPreMarkup + markupAmount;
+        const discountAmount = quote.discount_percent ? (subtotalPostMarkup * (quote.discount_percent / 100)) : 0;
+        const finalTotal = subtotalPostMarkup - discountAmount;
+
+        html = `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Invoice - ${quote.quote_number}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; color: #333; }
+              .invoice-container { max-width: 800px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+              .header { text-align: left; margin-bottom: 20px; }
+              .header h1 { margin: 0; font-size: 2em; color: #333; }
+              .header h2 { margin: 0; font-size: 1.2em; color: #555; }
+              .blue-divider { height: 2px; background-color: #3498db; margin: 20px 0; }
+              .info-section table { width: 100%; border-collapse: collapse; }
+              .info-section td { padding: 5px 0; font-size: 0.9em; }
+              .description-section table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+              .description-section th { background-color: #e6f2ff; color: #333; font-size: 1.2em; padding: 10px; text-align: left; border: 1px solid #b3d9ff; }
+              .description-section td { padding: 8px 10px; border: 1px solid #b3d9ff; font-size: 0.9em; }
+              .pricing-section { text-align: right; margin-top: 20px; }
+              .pricing-section p { margin: 5px 0; font-size: 1em; }
+              .pricing-section .total { font-size: 1.2em; font-weight: bold; }
+              .notes-section { margin-top: 20px; }
+              .notes-section h2 { font-size: 1.1em; color: #333; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+              .notes-section p { font-size: 0.9em; white-space: pre-wrap; }
+            </style>
+          </head>
+          <body>
+            <div class="invoice-container">
+              <div class="header">
+                <h1>${companyName} - Invoice</h1>
+                <h2>Quote #: ${quote.quote_number}</h2>
+              </div>
+              <div class="blue-divider"></div>
+              <div class="info-section">
+                <table>
+                  <tr>
+                    <td><strong>Customer:</strong> ${quote.customer_name}</td>
+                    <td style="text-align: right;"><strong>Date:</strong> ${new Date(quote.date).toLocaleDateString()}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Model:</strong> ${quote.title}</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="blue-divider"></div>
+              <div class="description-section">
+                <table>
+                  <thead>
+                    <tr><th>Description</th></tr>
+                  </thead>
+                  <tbody>
+                    ${printSetup ? `<tr><td>Print Duration - ${(printSetup.print_time / 60).toFixed(2)} hours</td></tr>` : ''}
+                    ${filaments.map(f => `<tr><td>${f.filament_name} - ${f.grams_used.toFixed(2)}g</td></tr>`).join('')}
+                    ${hardware.map(h => `<tr><td>${h.hardware_name}</td></tr>`).join('')}
+                    ${(labour && (labour.design_minutes > 0 || labour.preparation_minutes > 0 || labour.post_processing_minutes > 0 || labour.other_minutes > 0)) ? '<tr><td>Labour</td></tr>' : ''}
+                  </tbody>
+                </table>
+              </div>
+              <div class="blue-divider"></div>
+              <div class="pricing-section">
+                ${quote.discount_percent && quote.discount_percent > 0 ? 
+                  `<p>Subtotal: ${formatCurrency(subtotalPostMarkup)}</p>
+                   <p>Discount (${quote.discount_percent}%): -${formatCurrency(discountAmount)}</p>` : ''}
+                <p class="total">Total: ${formatCurrency(finalTotal)}</p>
+              </div>
+              ${quote.notes ? 
+                `<div class="notes-section">
+                  <div class="blue-divider"></div>
+                  <h2>Notes</h2>
+                  <p>${quote.notes}</p>
+                </div>` : ''}
+            </div>
+          </body>
+          </html>
         `;
-        
-        filaments.forEach(filament => {
-          html += `
-              <tr>
-                <td>${filament.filament_name}</td>
-                <td>${filament.grams_used.toFixed(2)}</td>
-                <td>${formatCurrency(filament.filament_price_per_gram)}</td>
-                <td>${formatCurrency(filament.total_cost)}</td>
-              </tr>
-          `;
-        });
-        
-        html += `
-            </tbody>
-          </table>
+      } else if (type === 'internal') {
+        // --- Internal Invoice HTML Generation Logic ---
+        const filamentTotal = filaments.reduce((sum, item) => sum + item.total_cost, 0);
+        const hardwareTotal = hardware.reduce((sum, item) => sum + item.total_cost, 0);
+        const printSetupCosts = printSetup ? (printSetup.power_cost + printSetup.depreciation_cost) : 0;
+        const labourTotalCost = labour ? labour.total_cost : 0;
+
+        const subtotalPreMarkup = filamentTotal + hardwareTotal + printSetupCosts + labourTotalCost;
+        const markupAmount = subtotalPreMarkup * (quote.markup_percent / 100);
+        const subtotalPostMarkup = subtotalPreMarkup + markupAmount;
+        const discountAmount = quote.discount_percent ? (subtotalPostMarkup * (quote.discount_percent / 100)) : 0;
+        const finalTotal = subtotalPostMarkup - discountAmount;
+
+        html = `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Internal Invoice - ${quote.quote_number}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; color: #333; }
+              .invoice-container { max-width: 800px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+              .header { text-align: left; margin-bottom: 20px; }
+              .header h1 { margin: 0; font-size: 2em; color: #333; }
+              .header h2 { margin: 0; font-size: 1.2em; color: #555; }
+              .blue-divider { height: 2px; background-color: #3498db; margin: 20px 0; }
+              .info-section table, .costs-section table, .summary-section table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+              .info-section td, .costs-section td, .summary-section td { padding: 8px 0; font-size: 0.9em; }
+              .costs-section th { background-color: #e6f2ff; color: #333; font-size: 1.1em; padding: 10px; text-align: left; border: 1px solid #b3d9ff; }
+              .costs-section td { padding: 8px 10px; border: 1px solid #b3d9ff; }
+              .costs-section .sub-header td { background-color: #f0f0f0; font-weight: bold; padding: 8px 10px; border: 1px solid #ccc; }
+              .summary-section { text-align: right; margin-top: 20px; }
+              .summary-section p { margin: 5px 0; font-size: 1em; }
+              .summary-section .total { font-size: 1.2em; font-weight: bold; }
+              .notes-section { margin-top: 20px; }
+              .notes-section h2 { font-size: 1.1em; color: #333; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+              .notes-section p { font-size: 0.9em; white-space: pre-wrap; }
+            </style>
+          </head>
+          <body>
+            <div class="invoice-container">
+              <div class="header">
+                <h1>${companyName} - Internal Invoice</h1>
+                <h2>Quote #: ${quote.quote_number}</h2>
+              </div>
+              <div class="blue-divider"></div>
+              <div class="info-section">
+                <table>
+                  <tr>
+                    <td><strong>Customer:</strong> ${quote.customer_name}</td>
+                    <td style="text-align: right;"><strong>Date:</strong> ${new Date(quote.date).toLocaleDateString()}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Model:</strong> ${quote.title}</td>
+                  </tr>
+                </table>
+              </div>
+              
+              <div class="costs-section">
+                <h3>Detailed Costs</h3>
+                
+                ${filaments.length > 0 ? `
+                <table>
+                  <tr class="sub-header"><td colspan="3">Filament Costs</td></tr>
+                  <tr><th>Name</th><th>Grams</th><th>Total</th></tr>
+                  ${filaments.map(f => `
+                    <tr>
+                      <td>${f.filament_name}</td>
+                      <td>${f.grams_used.toFixed(2)}g</td>
+                      <td>${formatCurrency(f.total_cost)}</td>
+                    </tr>
+                  `).join('')}
+                  <tr><td colspan="2" style="text-align:right; font-weight:bold;">Filament Subtotal:</td><td>${formatCurrency(filamentTotal)}</td></tr>
+                </table>` : ''}
+
+                ${hardware.length > 0 ? `
+                <table>
+                  <tr class="sub-header"><td colspan="3">Hardware Costs</td></tr>
+                  <tr><th>Name</th><th>Quantity</th><th>Total</th></tr>
+                  ${hardware.map(h => `
+                    <tr>
+                      <td>${h.hardware_name}</td>
+                      <td>${h.quantity}</td>
+                      <td>${formatCurrency(h.total_cost)}</td>
+                    </tr>
+                  `).join('')}
+                  <tr><td colspan="2" style="text-align:right; font-weight:bold;">Hardware Subtotal:</td><td>${formatCurrency(hardwareTotal)}</td></tr>
+                </table>` : ''}
+
+                ${printSetup ? `
+                <table>
+                  <tr class="sub-header"><td colspan="2">Print Setup Costs - Print Time ${formatTime(printSetup.print_time)}</td></tr>
+                  <tr><th>Name</th><th>Total</th></tr>
+                  <tr><td>Power Cost</td><td>${formatCurrency(printSetup.power_cost)}</td></tr>
+                  <tr><td>Machine Depreciation</td><td>${formatCurrency(printSetup.depreciation_cost)}</td></tr>
+                  <tr><td style="text-align:right; font-weight:bold;">Print Setup Subtotal:</td><td>${formatCurrency(printSetupCosts)}</td></tr>
+                </table>` : ''}
+
+                ${labour ? `
+                <table>
+                  <tr class="sub-header"><td colspan="3">Labour Costs</td></tr>
+                  <tr><th>Activity</th><th>Time</th><th>Total</th></tr>
+                  ${labour.design_minutes > 0 ? `<tr><td>Design</td><td>${formatTime(labour.design_minutes)}</td><td>${formatCurrency(((labour.design_minutes || 0) / 60) * globalLabourRate)}</td></tr>` : ''}
+                  ${labour.preparation_minutes > 0 ? `<tr><td>Preparation</td><td>${formatTime(labour.preparation_minutes)}</td><td>${formatCurrency(((labour.preparation_minutes || 0) / 60) * globalLabourRate)}</td></tr>` : ''}
+                  ${labour.post_processing_minutes > 0 ? `<tr><td>Post-Processing</td><td>${formatTime(labour.post_processing_minutes)}</td><td>${formatCurrency(((labour.post_processing_minutes || 0) / 60) * globalLabourRate)}</td></tr>` : ''}
+                  ${labour.other_minutes > 0 ? `<tr><td>Other</td><td>${formatTime(labour.other_minutes)}</td><td>${formatCurrency(((labour.other_minutes || 0) / 60) * globalLabourRate)}</td></tr>` : ''}
+                  <tr><td colspan="2" style="text-align:right; font-weight:bold;">Labour Subtotal:</td><td>${formatCurrency(labourTotalCost)}</td></tr>
+                </table>` : ''}
+              </div>
+
+              <div class="blue-divider"></div>
+              <div class="summary-section">
+                <p>Subtotal (Before Markup): ${formatCurrency(subtotalPreMarkup)}</p>
+                <p>Markup (${quote.markup_percent}%): +${formatCurrency(markupAmount)}</p>
+                <p>Subtotal (After Markup): ${formatCurrency(subtotalPostMarkup)}</p>
+                ${quote.discount_percent && quote.discount_percent > 0 ? 
+                  `<p>Discount (${quote.discount_percent}%): -${formatCurrency(discountAmount)}</p>` : ''}
+                <p class="total">Final Total: ${formatCurrency(finalTotal)}</p>
+              </div>
+
+              ${quote.notes ? 
+                `<div class="notes-section">
+                  <div class="blue-divider"></div>
+                  <h2>Notes</h2>
+                  <p>${quote.notes}</p>
+                </div>` : ''}
+            </div>
+          </body>
+          </html>
         `;
       }
+
       
-      // Hardware section
-      if (hardware.length > 0) {
-        html += `
-          <h2 class="section-title">Hardware</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Quantity</th>
-                <th>Unit Price</th>
-                <th>Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-        
-        hardware.forEach(item => {
-          html += `
-              <tr>
-                <td>${item.hardware_name}</td>
-                <td>${item.quantity}</td>
-                <td>${formatCurrency(item.unit_price)}</td>
-                <td>${formatCurrency(item.total_cost)}</td>
-              </tr>
-          `;
-        });
-        
-        html += `
-            </tbody>
-          </table>
-        `;
-      }
-      
-      // Print setup section
-      if (printSetup) {
-        html += `
-          <h2 class="section-title">Printing</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Printer</th>
-                <th>Print Time</th>
-                <th>Power Cost</th>
-                <th>Depreciation</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>${printSetup.printer_name}</td>
-                <td>${(printSetup.print_time / 60).toFixed(2)} hours</td>
-                <td>${formatCurrency(printSetup.power_cost)}</td>
-                <td>${formatCurrency(printSetup.depreciation_cost)}</td>
-                <td>${formatCurrency(printSetup.power_cost + printSetup.depreciation_cost)}</td>
-              </tr>
-            </tbody>
-          </table>
-        `;
-      }
-      
-      // Labour section
-      if (labour) {
-        html += `
-          <h2 class="section-title">Labour</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Task</th>
-                <th>Time</th>
-                <th>Rate</th>
-                <th>Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-        
-        if (labour.design_minutes > 0) {
-          html += `
-              <tr>
-                <td>Design</td>
-                <td>${formatTime(labour.design_minutes)}</td>
-                <td>${formatCurrency(labour.labour_rate_per_hour)} / hour</td>
-                <td>${formatCurrency((labour.design_minutes / 60) * labour.labour_rate_per_hour)}</td>
-              </tr>
-          `;
-        }
-        
-        if (labour.preparation_minutes > 0) {
-          html += `
-              <tr>
-                <td>Preparation</td>
-                <td>${formatTime(labour.preparation_minutes)}</td>
-                <td>${formatCurrency(labour.labour_rate_per_hour)} / hour</td>
-                <td>${formatCurrency((labour.preparation_minutes / 60) * labour.labour_rate_per_hour)}</td>
-              </tr>
-          `;
-        }
-        
-        if (labour.post_processing_minutes > 0) {
-          html += `
-              <tr>
-                <td>Post-Processing</td>
-                <td>${formatTime(labour.post_processing_minutes)}</td>
-                <td>${formatCurrency(labour.labour_rate_per_hour)} / hour</td>
-                <td>${formatCurrency((labour.post_processing_minutes / 60) * labour.labour_rate_per_hour)}</td>
-              </tr>
-          `;
-        }
-        
-        if (labour.other_minutes > 0) {
-          html += `
-              <tr>
-                <td>Other</td>
-                <td>${formatTime(labour.other_minutes)}</td>
-                <td>${formatCurrency(labour.labour_rate_per_hour)} / hour</td>
-                <td>${formatCurrency((labour.other_minutes / 60) * labour.labour_rate_per_hour)}</td>
-              </tr>
-          `;
-        }
-        
-        html += `
-              <tr class="total-row">
-                <td colspan="3">Total Labour</td>
-                <td>${formatCurrency(labour.total_cost)}</td>
-              </tr>
-            </tbody>
-          </table>
-        `;
-      }
+      res.send(html);
+
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      res.status(500).json({ error: 'Server error while generating invoice' });
     }
-    
-    // Close HTML
-    html += `
-        </div>
-      </body>
-      </html>
-    `;
-    
-    res.send(html);
-  } catch (error) {
-    console.error('Error generating invoice:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+  });
 
   return router;
 };
