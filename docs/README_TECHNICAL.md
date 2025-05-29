@@ -37,7 +37,7 @@ This document provides technical details about the 3DQ application architecture,
 │   └── quotes/            # Directory for data persistence
 ├── routes/                 # Express API routes
 ├── utils/                  # Utility scripts
-│   └── init-db.js         # Database initialization script
+│   └── init-db.js         # Database initialization script with example data
 ├── server.js              # Express server entry point
 └── package.json           # Project dependencies
 ```
@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS quotes (
   markup_percent REAL NOT NULL,
   total_cost REAL NOT NULL,
   is_quick_quote BOOLEAN NOT NULL DEFAULT 0,
+  discount_percent REAL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
@@ -186,6 +187,33 @@ CREATE TABLE IF NOT EXISTS quote_labour (
   FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE
 )
 ```
+
+## Default Data and Examples
+
+The application initializes with example data to help users understand the system:
+
+### Default Settings
+- Electricity cost: £0.2166 per kWh
+- Labour rate: £13.00 per hour
+- Default markup: 50%
+- Currency symbol: £
+- Quote prefix: 3DQ
+- Company name: "Prints Inc"
+
+### Default Resources
+- **Printer**: Bambu Lab X1 Carbon with 100W power usage and £0.14/hour depreciation
+- **Filament**: Bambu Lab PLA Basic - Black at £17.49/kg
+- **Hardware**: Various components including battery holders, USB cables, and LED strips
+
+### Example Quote
+A complete example quote ("Tardis Lightbox") is included with the following details:
+- 100g of PLA filament
+- 1 LED strip
+- 6 hours print time on the Bambu Lab X1 Carbon
+- 10 minutes of labor (5 min preparation, 5 min post-processing)
+- 50% markup and 5% discount
+
+This example demonstrates realistic power costs, depreciation, and pricing calculations.
 
 ## API Endpoints
 

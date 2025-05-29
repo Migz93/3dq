@@ -120,6 +120,7 @@ All your data is stored locally:
 
 - **Database**: Contains all your filaments, printers, hardware, quotes, and settings
 - **Quote Data**: All quote information is stored in the database for easy access and invoice generation
+- **Example Data**: The application includes an example quote (Tardis Lightbox) with realistic values to help you understand how the system works
 
 ## Troubleshooting
 

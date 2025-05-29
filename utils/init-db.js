@@ -88,6 +88,7 @@ function initDb() {
       markup_percent REAL NOT NULL,
       total_cost REAL NOT NULL,
       is_quick_quote BOOLEAN NOT NULL DEFAULT 0,
+      discount_percent REAL DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
@@ -211,7 +212,7 @@ function initDb() {
     price: 1099,
     depreciation_time: 8736,
     service_cost: 109.9,
-    power_usage: 0.1,
+    power_usage: 100,  // Set to 100 watts for the 3D printer
     depreciation_per_hour: 0.14,
     status: 'Active'
   };
@@ -273,6 +274,99 @@ function initDb() {
     });
   }
   
+  // Initialize example quote
+  const quoteCount = db.prepare('SELECT COUNT(*) as count FROM quotes').get();
+  if (quoteCount.count === 0) {
+    // Example quote data based on existing quote ID 6
+    const exampleQuote = {
+      quote_number: '3DQ0001',
+      title: 'Tardis Lightbox',
+      customer_name: 'John Smith',
+      date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
+      notes: 'Lightbox designed on makerworld.',
+      markup_percent: 50.0,
+      total_cost: 21.625268,
+      is_quick_quote: 0,
+      discount_percent: 5.0
+    };
+
+    // Insert example quote
+    const insertQuote = db.prepare(
+      'INSERT INTO quotes (quote_number, title, customer_name, date, notes, markup_percent, total_cost, is_quick_quote, discount_percent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    
+    const quoteId = insertQuote.run(
+      exampleQuote.quote_number,
+      exampleQuote.title,
+      exampleQuote.customer_name,
+      exampleQuote.date,
+      exampleQuote.notes,
+      exampleQuote.markup_percent,
+      exampleQuote.total_cost,
+      exampleQuote.is_quick_quote,
+      exampleQuote.discount_percent
+    ).lastInsertRowid;
+    
+    // Insert example quote filament
+    const insertQuoteFilament = db.prepare(
+      'INSERT INTO quote_filaments (quote_id, filament_id, filament_name, filament_price_per_gram, grams_used, total_cost) VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    
+    insertQuoteFilament.run(
+      quoteId,
+      1, // Reference to the default filament
+      'Bambu Lab PLA Basic - Black',
+      0.01749,
+      100.0,
+      1.749
+    );
+    
+    // Insert example quote hardware
+    const insertQuoteHardware = db.prepare(
+      'INSERT INTO quote_hardware (quote_id, hardware_id, hardware_name, quantity, unit_price, total_cost) VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    
+    insertQuoteHardware.run(
+      quoteId,
+      3, // Reference to the LED 5V 1M hardware
+      'LED 5V 1M',
+      1,
+      10.29,
+      10.29
+    );
+    
+    // Insert example quote print setup
+    const insertQuotePrintSetup = db.prepare(
+      'INSERT INTO quote_print_setup (quote_id, printer_id, printer_name, print_time, power_cost, depreciation_cost) VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    
+    insertQuotePrintSetup.run(
+      quoteId,
+      1, // Reference to the default printer
+      'Bambu Lab X1 Carbon',
+      360.0,
+      0.12996,
+      0.84
+    );
+    
+    // Insert example quote labour
+    const insertQuoteLabour = db.prepare(
+      'INSERT INTO quote_labour (quote_id, design_minutes, preparation_minutes, post_processing_minutes, other_minutes, labour_rate_per_hour, total_cost) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    );
+    
+    insertQuoteLabour.run(
+      quoteId,
+      0,
+      5,
+      5,
+      0,
+      13.0,
+      2.16666666666667
+    );
+    
+    console.log('Example quote added successfully');
+  }
+
   console.log('Database initialized successfully');
 }
 
