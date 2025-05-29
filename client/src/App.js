@@ -16,7 +16,7 @@ import PrinterPage from './pages/PrinterPage';
 import HardwarePage from './pages/HardwarePage';
 import SettingsPage from './pages/SettingsPage';
 import QuoteBuilder from './pages/QuoteBuilder';
-import QuickQuote from './pages/QuickQuote';
+import QuickCost from './pages/QuickCost';
 import ViewQuote from './pages/ViewQuote';
 
 // Context
@@ -108,7 +108,7 @@ function App() {
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/quote/new" element={<QuoteBuilder />} />
                   <Route path="/quote/edit/:id" element={<QuoteBuilder />} />
-                  <Route path="/quote/quick" element={<QuickQuote />} />
+                  <Route path="/quick-cost" element={<QuickCost />} />
                   <Route path="/quote/:id" element={<ViewQuote />} />
                 </Routes>
               </Box>

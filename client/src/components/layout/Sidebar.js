@@ -40,9 +40,9 @@ function Sidebar() {
   // Define sidebar menu items
   const menuItems = [
     {
-      text: 'Quick Quote',
+      text: 'Quick Cost',
       icon: <FlashOnIcon />,
-      path: '/quote/quick'
+      path: '/quick-cost'
     },
     {
       text: 'Quotes',
