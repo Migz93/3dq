@@ -6,166 +6,145 @@ This document outlines the structure and design of the invoice system in 3DQ, in
 
 The 3DQ application supports two types of invoices:
 
-1. **Client Invoice**: A simplified, customer-facing invoice that shows only necessary information without detailed costs.
-2. **Internal Invoice**: A comprehensive invoice with detailed breakdowns of all costs, markups, and calculations for business use.
+1.  **Client Invoice**: A simplified, customer-facing invoice that shows only necessary information without detailed costs. Key information includes quote number, date, model name, customer name, a description of services/items (print duration, filaments used, hardware, labour summary), and the final pricing (subtotal, discount if any, and total).
+2.  **Internal Invoice**: A comprehensive invoice with detailed breakdowns of all costs, markups, and calculations for business use. This includes detailed sections for materials, hardware, printing costs (printer, time, power, depreciation), and labour (tasks, time, rate, cost per task), culminating in a full financial summary (subtotal before markup, markup amount, subtotal after markup, discount if any, and final total).
 
 ## Client Invoice Design
 
 The client invoice is designed to be clean, professional, and easy to understand for customers.
 
 ### Header Section
-- **Title**: The company name followed by "- Invoice" (e.g., "Prints Inc - Invoice")
-- **Blue Divider Line**: A horizontal blue line (#3498db) separates the header from the information section
+-   **Title**: The company name followed by "- Invoice" (e.g., "Prints Inc - Invoice")
+-   **Blue Divider Line**: A horizontal blue line (#3498db) separates the header from the information section.
 
 ### Information Section
-- A 2x2 table with no visible borders containing:
-  - **Top Left**: Quote number
-  - **Top Right**: Date
-  - **Bottom Left**: Model name
-  - **Bottom Right**: Customer name
-- **Blue Divider Line**: Another horizontal blue line separates the information from the description section
+-   A 2x2 table with no visible borders containing:
+    -   **Top Left**: Quote number
+    -   **Top Right**: Date
+    -   **Bottom Left**: Model name
+    -   **Bottom Right**: Customer name
+-   **Blue Divider Line**: Another horizontal blue line separates the information from the description section.
 
 ### Description Section
-- A table with a single column header labeled "Description"
-- The header has a light blue background (#e6f2ff) and is slightly larger text (1.2em)
-- All cells have borders (1px solid #b3d9ff) to clearly separate items
-- Contents include:
-  - Print Duration with the print time in hours (e.g., "Print Duration - 2.50 hours")
-  - Each filament with name and grams used (e.g., "PLA White - 45.20g")
-  - Each hardware item listed on its own line (e.g., "M3 Screws")
-  - Simply the word "Labour" if any labor was recorded (no time details)
-- **Blue Divider Line**: A horizontal blue line separates the description from the pricing section
+-   A table with a single column header labeled "Description".
+-   The header has a light blue background (#e6f2ff) and is slightly larger text (1.2em).
+-   All cells have borders (1px solid #b3d9ff) to clearly separate items.
+-   Contents include:
+    -   Print Duration with the print time in hours (e.g., "Print Duration - 2.50 hours")
+    -   Each filament with name and grams used (e.g., "PLA White - 45.20g")
+    -   Each hardware item listed on its own line (e.g., "M3 Screws")
+    -   Simply the word "Labour" if any labor was recorded (no time details).
+-   **Blue Divider Line**: A horizontal blue line separates the description from the pricing section.
 
 ### Pricing Section
-- Right-aligned on the page
-- If a discount is applied:
-  - Shows the subtotal
-  - Shows the discount percentage and amount (e.g., "Discount (10%): -$5.00")
-  - Shows the final total in slightly larger text
-- If no discount is applied:
-  - Shows only the final total in slightly larger text
-
-### Notes Section (Optional)
-- Only displayed if notes are provided
-- Section title "Notes" followed by the note text
+-   Right-aligned on the page.
+-   If a discount is applied:
+    -   Shows the subtotal (after markup).
+    -   Shows the discount percentage and amount (e.g., "Discount (10%): -$5.00").
+    -   Shows the final total in slightly larger text.
+-   If no discount is applied:
+    -   Shows only the final total in slightly larger text.
 
 ## Internal Invoice Design
 
-The internal invoice provides comprehensive details for business use and cost analysis.
+The internal invoice provides comprehensive details for business use and cost analysis. Font sizes are generally smaller than the client invoice to fit more information.
 
 ### Header Section
-- Similar to the client invoice but labeled as "INTERNAL INVOICE"
+-   Similar to the client invoice but labeled as "INTERNAL INVOICE". Header elements are centered and have reduced margins.
 
-### Summary Section
-- A table showing category totals:
-  - Materials total
-  - Hardware total
-  - Printing costs
-  - Labour costs
-  - Subtotal
-  - Discount (if applicable)
-  - Markup percentage and amount
-  - Final total
+### Information Section
+- Similar to client invoice but with reduced padding between rows for a more compact layout.
 
-### Materials Section
-- Detailed breakdown of each material:
-  - Material name
-  - Amount used in grams
-  - Price per gram
-  - Total cost
+### Costs Sections (Materials, Hardware, Printing, Labour)
+-   Each section has a table with detailed breakdowns:
+    -   **Materials**: Material name, amount used (grams), price per gram, total cost.
+    -   **Hardware**: Item name, quantity, unit price, total cost.
+    -   **Printing**: Printer used, print time (hours), power cost, depreciation cost, total printing cost.
+    -   **Labour**: Task type (Design, Preparation, Post-Processing, Other), time spent, hourly rate, cost per task, total labour cost.
+-   Table headers have a light blue background (#e6f2ff).
+-   All cells have borders (1px solid #b3d9ff or #ccc for sub-headers).
 
-### Hardware Section
-- Detailed breakdown of each hardware item:
-  - Item name
-  - Quantity
-  - Unit price
-  - Total cost
-
-### Printing Section
-- Details about the printing process:
-  - Printer used
-  - Print time in hours
-  - Power cost
-  - Depreciation cost
-  - Total printing cost
-
-### Labour Section
-- Breakdown of labour costs:
-  - Task type (Design, Preparation, Post-Processing, Other)
-  - Time spent on each task
-  - Hourly rate
-  - Cost for each task
-  - Total labour cost
+### Financial Summary Section
+-   Right-aligned on the page with reduced top margin.
+-   Shows a full breakdown:
+    -   Subtotal (Before Markup)
+    -   Markup (percentage and amount)
+    -   Subtotal (After Markup)
+    -   Discount (if applicable, percentage and amount)
+    -   Final Total (bold and slightly larger text).
 
 ## Styling Elements
 
 ### Colors
-- Primary Blue: #3498db (used for divider lines and table headers)
-- Light Blue Background: #e6f2ff (used for description table header)
-- Light Blue Border: #b3d9ff (used for table cell borders)
+-   Primary Blue: #3498db (used for divider lines and table headers)
+-   Light Blue Background: #e6f2ff (used for description/costs table headers)
+-   Light Blue Border: #b3d9ff (used for most table cell borders)
+-   Grey Border: #ccc (used for sub-header table cell borders in internal invoice)
 
 ### Typography
-- Font Family: Arial, sans-serif
-- Description Header: 1.2em
-- Total Price: 1.2em, bold
+-   Font Family: Arial, sans-serif
+-   Client Invoice Description Header: 1.2em
+-   Client Invoice Total Price: 1.2em, bold
+-   Internal Invoice font sizes are generally smaller (e.g., 0.8em for table data, 1.0em for headers) for compactness.
 
 ### Layout
-- Maximum Width: 800px
-- Centered on page
-- Responsive design for various screen sizes
+-   Maximum Width: 800px, centered on page.
+-   The invoice HTML includes all necessary CSS within `<style>` tags for self-contained rendering.
+
+## Features
+
+-   **Print/Save as PDF Button**: A button is displayed in the top-right corner of the invoice page (when viewed in a browser) allowing the user to trigger the browser's print dialog, which can be used to print or save as PDF.
+    -   This button is hidden via CSS (`display: none !important;`) when the invoice is actually printed.
+-   **Print-Specific Styling**:
+    -   Browser default headers and footers are not explicitly hidden due to inconsistencies, but page margins are set (`@page { margin: 1cm; }`).
+    -   Table borders, including right borders, are explicitly defined for print using `border-collapse: separate !important;` and `border: 1px solid ... !important;` on `<th>` and `<td>` elements to ensure they render correctly.
+    -   Background colors for table headers are forced to print using `-webkit-print-color-adjust: exact; print-color-adjust: exact;`.
+    -   Box shadows on the invoice container are removed for printing.
 
 ## Implementation Notes
 
-- The invoice is generated as HTML for easy viewing and printing
-- Currency symbol is dynamically pulled from system settings
-- Company name is customizable through system settings
-- All calculations are performed server-side to ensure accuracy
-- Print functionality is included for easy printing of invoices
+-   The invoice is generated as a complete HTML document (including embedded CSS) by the backend.
+-   Currency symbol is dynamically pulled from system settings.
+-   Company name is customizable through system settings and displayed in the invoice header.
+-   All calculations (costs, markups, discounts) are performed server-side in `/routes/quotes.js` to ensure accuracy and consistency.
 
 ## Technical Reference
 
 ### Key Files
 
 #### Backend (Server-side)
-- `/routes/quotes.js` - Contains the main invoice generation logic
-  - Route: `GET /api/quotes/:id/invoice/:type` - Generates invoice HTML
-  - Handles both internal and client invoice types
-  - Performs all calculations for costs, discounts, and markups
-  - Generates the complete HTML structure with styling
+-   **`/routes/quotes.js`**: This is the core file for the invoicing system.
+    -   **Route**: `GET /api/quotes/:id/invoice/:type`
+    -   **Functionality**: Fetches all necessary data (quote details, filament usage, hardware, print setup, labour, company settings). Performs all calculations for costs, markups, and discounts. Generates the complete HTML structure for the specified invoice type (`client` or `internal`), including all content and embedded CSS styling.
 
 #### Frontend (Client-side)
-- `/client/public/print-invoice.html` - Print-friendly invoice page
-  - Loads invoice content from the API
-  - Provides a print button for easy printing
-  - Handles responsive styling for different devices
-  - Contains additional print-specific CSS
-
-- `/client/src/pages/ViewQuote.js` - Quote viewing page with invoice buttons
-  - Contains buttons to generate client or internal invoices
-  - Calls the invoice generation function
-  - Opens the invoice in a new tab via the print-invoice.html page
-
-- `/client/src/pages/SettingsPage.js` - Settings page
-  - Contains company name setting that appears on invoices
+-   **`/client/src/pages/ViewQuote.js`**: This page displays quote details and provides the interface for generating invoices.
+    -   **Functionality**: Contains "Generate Client Invoice" and "Generate Internal Invoice" buttons. When clicked, a JavaScript function (`generateInvoice(type)`) calls the backend API endpoint (`/api/quotes/:id/invoice/:type`). The raw HTML response from the backend is then opened in a new browser tab (`window.open()`).
+-   **`/client/src/pages/SettingsPage.js`**: Allows users to configure application settings.
+    -   **Functionality**: Contains the company name setting, which is fetched and displayed on the generated invoices.
 
 ### Data Flow
 
-1. User clicks "Client Invoice" or "Internal Invoice" button in ViewQuote.js
-2. The application opens print-invoice.html with the quote ID and invoice type as URL parameters
-3. print-invoice.html makes an API request to `/api/quotes/:id/invoice/:type`
-4. The server (quotes.js) generates the HTML for the invoice based on the type
-5. The HTML is returned to print-invoice.html and displayed to the user
-6. User can then print the invoice using the print button
+1.  User navigates to the `ViewQuote.js` page for a specific quote.
+2.  User clicks either the "Generate Client Invoice" or "Generate Internal Invoice" button.
+3.  The `generateInvoice(type)` function in `ViewQuote.js` makes an asynchronous HTTP GET request to the backend API endpoint: `/api/quotes/:id/invoice/:type` (e.g., `/api/quotes/11/invoice/client`).
+4.  The backend route in `/routes/quotes.js` receives the request.
+    -   It fetches all required data from the database (quote details, associated costs, company settings).
+    -   It performs all necessary calculations (subtotals, markup, discount, final total).
+    -   It constructs the complete HTML string for the requested invoice type, embedding all necessary CSS within `<style>` tags.
+5.  The server responds to the API request with the generated HTML string as the response body (content type `text/html`).
+6.  The `generateInvoice(type)` function in `ViewQuote.js` receives the HTML response.
+7.  It opens a new browser tab and writes the received HTML content into it, rendering the invoice.
+8.  The user can then use the "Print/Save as PDF" button on the new invoice page or the browser's native print functionality.
 
 ### Customization
 
 To modify the invoice appearance or content:
 
-- Edit the HTML template in `/routes/quotes.js` - Look for the section that begins with `// Generate HTML based on invoice type`
-- Modify the CSS styles in the same file - Look for the `<style>` section
-- For print-specific styling, edit `/client/public/print-invoice.html`
+-   **HTML Structure & Content**: Edit the HTML template strings directly within the `if (type === 'client') { ... } else if (type === 'internal') { ... }` blocks in `/routes/quotes.js`.
+-   **CSS Styling**: Modify the CSS rules within the `<style> ... </style>` tags embedded in the HTML template strings in `/routes/quotes.js`.
 
 To change the data shown on invoices:
 
-- Modify the database queries in `/routes/quotes.js` to include additional information
-- Update the HTML template to display the new data
+-   **Data Fetching**: Modify the database queries in `/routes/quotes.js` (within the `router.get('/:id/invoice/:type', ...)` handler) to retrieve additional or different data.
+-   **Data Display**: Update the HTML template strings in `/routes/quotes.js` to incorporate and display the new data fields.
