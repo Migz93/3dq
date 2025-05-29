@@ -513,12 +513,32 @@ router.post('/quick', (req, res) => {
               .pricing-section { text-align: right; margin-top: 20px; }
               .pricing-section p { margin: 5px 0; font-size: 1em; }
               .pricing-section .total { font-size: 1.2em; font-weight: bold; }
-              .notes-section { margin-top: 20px; }
-              .notes-section h2 { font-size: 1.1em; color: #333; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-              .notes-section p { font-size: 0.9em; white-space: pre-wrap; }
+              .print-button { position: fixed; top: 20px; right: 20px; padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 1000; font-family: Arial, sans-serif; font-size: 14px; display: block !important; }
+              
+              @page { margin: 1cm; } /* Removed size: auto */
+
+              @media print {
+                html, body { background-color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } /* Removed padding/margin 0 for body */
+                .invoice-container { 
+                  box-shadow: none !important; 
+                  margin: 0 auto !important; 
+                  padding: 0 !important;
+                  border-radius: 0 !important;
+                  border: none !important; 
+                  width: 100% !important; 
+                  max-width: 100% !important;
+                }
+                .print-button { display: none !important; }
+                .blue-divider { background-color: #3498db !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                /* Table border fix for client invoice */
+                .description-section table { border-collapse: separate !important; border-spacing: 0 !important; width: 100% !important; }
+                .description-section th, .description-section td { border: 1px solid #b3d9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .description-section th { background-color: #e6f2ff !important; color: #333 !important; /* Ensure background prints */ }
+              }
             </style>
           </head>
           <body>
+            <button class="print-button" onclick="window.print()">Print/Save as PDF</button>
             <div class="invoice-container">
               <div class="header">
                 <h1>${companyName} - Invoice</h1>
@@ -557,12 +577,6 @@ router.post('/quick', (req, res) => {
                    <p>Discount (${quote.discount_percent}%): -${formatCurrency(discountAmount)}</p>` : ''}
                 <p class="total">Total: ${formatCurrency(finalTotal)}</p>
               </div>
-              ${quote.notes ? 
-                `<div class="notes-section">
-                  <div class="blue-divider"></div>
-                  <h2>Notes</h2>
-                  <p>${quote.notes}</p>
-                </div>` : ''}
             </div>
           </body>
           </html>
@@ -590,24 +604,44 @@ router.post('/quick', (req, res) => {
             <style>
               body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; color: #333; }
               .invoice-container { max-width: 800px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
-              .header { text-align: left; margin-bottom: 20px; }
-              .header h1 { margin: 0; font-size: 2em; color: #333; }
-              .header h2 { margin: 0; font-size: 1.2em; color: #555; }
-              .blue-divider { height: 2px; background-color: #3498db; margin: 20px 0; }
-              .info-section table, .costs-section table, .summary-section table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-              .info-section td, .costs-section td, .summary-section td { padding: 8px 0; font-size: 0.9em; }
-              .costs-section th { background-color: #e6f2ff; color: #333; font-size: 1.1em; padding: 10px; text-align: left; border: 1px solid #b3d9ff; }
-              .costs-section td { padding: 8px 10px; border: 1px solid #b3d9ff; }
-              .costs-section .sub-header td { background-color: #f0f0f0; font-weight: bold; padding: 8px 10px; border: 1px solid #ccc; }
-              .summary-section { text-align: right; margin-top: 20px; }
-              .summary-section p { margin: 5px 0; font-size: 1em; }
-              .summary-section .total { font-size: 1.2em; font-weight: bold; }
-              .notes-section { margin-top: 20px; }
-              .notes-section h2 { font-size: 1.1em; color: #333; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-              .notes-section p { font-size: 0.9em; white-space: pre-wrap; }
+              .header { text-align: center; margin-bottom: 5px; } 
+              .header h1 { margin: 0; font-size: 1.8em; color: #333; } 
+              .header h2 { margin: 0; font-size: 1.1em; color: #555; } 
+              .blue-divider { height: 2px; background-color: #3498db; margin: 5px 0; } 
+              .info-section table, .costs-section table, .summary-section table { width: 100%; border-collapse: collapse; margin-bottom: 12px; } 
+              .info-section td, .summary-section td { padding: 2px 0; font-size: 0.8em; } 
+              .costs-section th { background-color: #e6f2ff; color: #333; font-size: 1.0em; padding: 8px; text-align: left; border: 1px solid #b3d9ff; } 
+              .costs-section td { padding: 6px 8px; font-size: 0.8em; border: 1px solid #b3d9ff; } 
+              .costs-section .sub-header td { background-color: #f0f0f0; font-weight: bold; padding: 6px 8px; border: 1px solid #ccc; font-size: 0.9em; } 
+              .summary-section { text-align: right; margin-top: 5px; } 
+              .summary-section p { margin: 4px 0; font-size: 0.9em; } 
+              .summary-section .total { font-size: 1.1em; font-weight: bold; } 
+              .print-button { position: fixed; top: 20px; right: 20px; padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 1000; font-family: Arial, sans-serif; font-size: 14px; display: block !important; }
+
+              @page { margin: 1cm; } /* Removed size: auto */
+
+              @media print {
+                html, body { background-color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } /* Removed padding/margin 0 for body here, handled by invoice-container */
+                .invoice-container { 
+                  box-shadow: none !important; 
+                  margin: 0 auto !important; /* Or margin: 0 !important; if full bleed is desired */
+                  padding: 0 !important;
+                  border-radius: 0 !important;
+                  border: none !important; 
+                  width: 100% !important; 
+                  max-width: 100% !important;
+                }
+                .print-button { display: none !important; }
+                .blue-divider { background-color: #3498db !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .costs-section table { border-collapse: separate !important; border-spacing: 0 !important; width: 100% !important; }
+                .costs-section th, .costs-section td { border: 1px solid #b3d9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .costs-section th { background-color: #e6f2ff !important; color: #333 !important; /* Ensure background prints */ }
+                .costs-section .sub-header td { border: 1px solid #ccc !important; background-color: #f0f0f0 !important; color: #333 !important; /* Ensure background prints */ }
+              }
             </style>
           </head>
           <body>
+            <button class="print-button" onclick="window.print()">Print/Save as PDF</button>
             <div class="invoice-container">
               <div class="header">
                 <h1>${companyName} - Internal Invoice</h1>
@@ -688,12 +722,6 @@ router.post('/quick', (req, res) => {
                 <p class="total">Final Total: ${formatCurrency(finalTotal)}</p>
               </div>
 
-              ${quote.notes ? 
-                `<div class="notes-section">
-                  <div class="blue-divider"></div>
-                  <h2>Notes</h2>
-                  <p>${quote.notes}</p>
-                </div>` : ''}
             </div>
           </body>
           </html>
