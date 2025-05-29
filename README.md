@@ -9,10 +9,11 @@
 ### Quote Management
 - **Quote Builder**: Create detailed quotes with a step-by-step process
 - **Quick Quote**: Generate fast quotes with minimal inputs
-- **Quote History**: View and manage all past quotes
+- **Quote Viewing & History**: View detailed quote information, including print setup (printer, duration, power/depreciation costs) and a comprehensive cost summary (breakdown of production costs and financial totals). Manage all past quotes.
 - **HTML Invoices**: Generate client-friendly or detailed internal invoices with print functionality
 - **Historical Accuracy**: Quotes maintain their original values even when settings change
 - **Discount Support**: Apply percentage-based discounts to quotes that are reflected in invoices
+- **Clearer Invoice Icons**: Updated icons for generating client and internal invoices.
 
 ### Resource Management
 - **Filament Management**: Add, edit, and archive filament types with pricing

@@ -10,6 +10,8 @@ This document provides technical details about the 3DQ application architecture,
 - **State Management**: React Context API
 - **Routing**: React Router v6
 - **HTML Invoices**: Responsive invoice templates with print functionality
+- **Key Components**:
+    - `ViewQuote.js`: Responsible for displaying a detailed breakdown of a saved quote, including customer information, filament usage, hardware, print setup details (printer, duration, power/depreciation), labour, and a comprehensive cost summary. It also provides actions for editing, duplicating, deleting, and generating invoices.
 
 ### Backend
 - **Server**: Express.js (Node.js)
