@@ -16,19 +16,14 @@ function CostSummary({
   printSetup,
   labour,
   markup,
-  setMarkup,
   totalCost,
   setTotalCost,
-  currencySymbol
+  currencySymbol,
+  discount = 0
 }) {
   const { settings } = useContext(SettingsContext);
   
-  // Initialize markup from settings
-  useEffect(() => {
-    if (settings.default_markup_percent && markup === 0) {
-      setMarkup(parseFloat(settings.default_markup_percent));
-    }
-  }, [settings.default_markup_percent]);
+  // We no longer need to initialize markup here as it's handled in JobInfo component
 
   // Calculate totals
   const filamentTotal = quoteFilaments.reduce((sum, f) => sum + f.total_cost, 0);
@@ -37,73 +32,177 @@ function CostSummary({
   const depreciationCost = printSetup.depreciation_cost || 0;
   const labourCost = labour.total_cost || 0;
   
-  const subtotal = filamentTotal + hardwareTotal + powerCost + depreciationCost + labourCost;
+  const materialCostsTotal = filamentTotal + hardwareTotal + powerCost + depreciationCost;
+  const serviceCostsTotal = labourCost;
+  
+  const subtotal = materialCostsTotal + serviceCostsTotal;
   const markupAmount = subtotal * (markup / 100);
-  const calculatedTotal = subtotal + markupAmount;
+  const afterMarkup = subtotal + markupAmount;
+  const discountAmount = afterMarkup * (discount / 100);
+  const calculatedTotal = afterMarkup - discountAmount;
 
   // Update total cost when any component changes
   useEffect(() => {
     setTotalCost(calculatedTotal);
   }, [calculatedTotal]);
+  
 
-  // Handle markup change
-  const handleMarkupChange = (e) => {
-    const value = parseFloat(e.target.value) || 0;
-    setMarkup(value);
-  };
 
   return (
     <Paper sx={{ p: 3, mb: 3, backgroundColor: 'background.paper' }}>
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
         Cost Summary
       </Typography>
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body1" gutterBottom>
-            Filament Cost: {currencySymbol}{filamentTotal.toFixed(2)}
+      
+      {/* Main Content - Side by Side Layout */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {/* Left Side - Material Costs */}
+        <Grid item xs={12} md={6}>
+          <Typography variant="h6" color="primary" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1 }}>
+            Material Costs
           </Typography>
-          <Typography variant="body1" gutterBottom>
-            Hardware Cost: {currencySymbol}{hardwareTotal.toFixed(2)}
-          </Typography>
-          <Typography variant="body1" gutterBottom>
-            Power Cost: {currencySymbol}{powerCost.toFixed(2)}
-          </Typography>
-          <Typography variant="body1" gutterBottom>
-            Depreciation: {currencySymbol}{depreciationCost.toFixed(2)}
-          </Typography>
-          <Typography variant="body1" gutterBottom>
-            Labour Cost: {currencySymbol}{labourCost.toFixed(2)}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body1" gutterBottom>
-            Subtotal: {currencySymbol}{subtotal.toFixed(2)}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <Typography variant="body1" sx={{ mr: 2 }}>
-              Markup:
-            </Typography>
-            <TextField
-              type="number"
-              value={markup}
-              onChange={handleMarkupChange}
-              size="small"
-              sx={{ width: 100 }}
-              InputProps={{
-                endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                inputProps: { min: 0 }
-              }}
-            />
+          
+          <Grid container spacing={2}>
+            {/* Filament */}
+            <Grid item xs={6}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2">Filament:</Typography>
+                <Typography variant="body2">{currencySymbol}{filamentTotal.toFixed(2)}</Typography>
+              </Box>
+            </Grid>
+            
+            {/* Hardware */}
+            <Grid item xs={6}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2">Hardware:</Typography>
+                <Typography variant="body2">{currencySymbol}{hardwareTotal.toFixed(2)}</Typography>
+              </Box>
+            </Grid>
+            
+            {/* Power */}
+            <Grid item xs={6}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2">Power:</Typography>
+                <Typography variant="body2">{currencySymbol}{powerCost.toFixed(2)}</Typography>
+              </Box>
+            </Grid>
+            
+            {/* Depreciation */}
+            <Grid item xs={6}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2">Depreciation:</Typography>
+                <Typography variant="body2">{currencySymbol}{depreciationCost.toFixed(2)}</Typography>
+              </Box>
+            </Grid>
+          </Grid>
+          
+          {/* Material Subtotal */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', borderTop: 1, borderColor: 'divider', pt: 1, mt: 2 }}>
+            <Typography variant="subtitle2" fontWeight="medium">Material Subtotal:</Typography>
+            <Typography variant="subtitle2" fontWeight="medium">{currencySymbol}{materialCostsTotal.toFixed(2)}</Typography>
           </Box>
-          <Typography variant="body1" gutterBottom>
-            Markup Amount: {currencySymbol}{markupAmount.toFixed(2)}
+        </Grid>
+        
+        {/* Right Side - Labour Costs */}
+        <Grid item xs={12} md={6}>
+          <Typography variant="h6" color="primary" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1 }}>
+            Labour Costs
           </Typography>
-          <Divider sx={{ my: 1 }} />
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Total: {currencySymbol}{totalCost.toFixed(2)}
-          </Typography>
+          
+          <Grid container spacing={2}>
+            {/* Design */}
+            <Grid item xs={6}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2">Design:</Typography>
+                <Typography variant="body2">{labour.design_minutes}m</Typography>
+              </Box>
+            </Grid>
+            
+            {/* Preparation */}
+            <Grid item xs={6}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2">Preparation:</Typography>
+                <Typography variant="body2">{labour.preparation_minutes}m</Typography>
+              </Box>
+            </Grid>
+            
+            {/* Post Processing */}
+            <Grid item xs={6}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2">Post Processing:</Typography>
+                <Typography variant="body2">{labour.post_processing_minutes}m</Typography>
+              </Box>
+            </Grid>
+            
+            {/* Other */}
+            <Grid item xs={6}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2">Other:</Typography>
+                <Typography variant="body2">{labour.other_minutes}m</Typography>
+              </Box>
+            </Grid>
+            
+
+          </Grid>
+          
+          {/* Labour Subtotal */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', borderTop: 1, borderColor: 'divider', pt: 1, mt: 2 }}>
+            <Typography variant="subtitle2" fontWeight="medium">Labour Subtotal:</Typography>
+            <Typography variant="subtitle2" fontWeight="medium">{currencySymbol}{serviceCostsTotal.toFixed(2)}</Typography>
+          </Box>
         </Grid>
       </Grid>
+      
+      {/* Totals Section */}
+      <Box sx={{ backgroundColor: 'background.default', p: 3, borderRadius: 1, mt: 3 }}>
+        <Typography variant="h6" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1 }}>
+          Price Breakdown
+        </Typography>
+        
+        {/* Base Subtotal */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="subtitle1">Base Subtotal:</Typography>
+          <Typography variant="subtitle1">{currencySymbol}{subtotal.toFixed(2)}</Typography>
+        </Box>
+        
+        {/* Markup */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="subtitle1">Markup ({markup}%):</Typography>
+          <Typography variant="subtitle1">+{currencySymbol}{markupAmount.toFixed(2)}</Typography>
+        </Box>
+        
+        {/* After Markup */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, pt: 1, borderTop: '1px dashed rgba(0, 0, 0, 0.12)' }}>
+          <Typography variant="subtitle1" fontWeight="medium">After Markup:</Typography>
+          <Typography variant="subtitle1" fontWeight="medium">{currencySymbol}{afterMarkup.toFixed(2)}</Typography>
+        </Box>
+        
+        {/* Discount - only show if there is a discount */}
+        {discount > 0 && (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="subtitle1">Discount ({discount}%):</Typography>
+              <Typography variant="subtitle1" color="error">-{currencySymbol}{discountAmount.toFixed(2)}</Typography>
+            </Box>
+          </>
+        )}
+        
+        {/* Final Total */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mt: 2, 
+          pt: 2,
+          borderTop: 1, 
+          borderColor: 'divider'
+        }}>
+          <Typography variant="h6" fontWeight="bold">Final Total:</Typography>
+          <Typography variant="h6" fontWeight="bold" color="primary">
+            {currencySymbol}{totalCost.toFixed(2)}
+          </Typography>
+        </Box>
+      </Box>
     </Paper>
   );
 }

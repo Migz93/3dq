@@ -12,6 +12,7 @@
 - **Quote History**: View and manage all past quotes
 - **HTML Invoices**: Generate client-friendly or detailed internal invoices with print functionality
 - **Historical Accuracy**: Quotes maintain their original values even when settings change
+- **Discount Support**: Apply percentage-based discounts to quotes that are reflected in invoices
 
 ### Resource Management
 - **Filament Management**: Add, edit, and archive filament types with pricing

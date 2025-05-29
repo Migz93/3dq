@@ -119,9 +119,9 @@ function ViewQuote() {
     }
   };
 
-  // Generate invoice
+  // Generate invoice using print-friendly page
   const generateInvoice = (type) => {
-    window.open(`/api/quotes/${id}/invoice/${type}`, '_blank');
+    window.open(`/print-invoice.html?id=${id}&type=${type}`, '_blank');
   };
 
   if (loading) {
@@ -157,6 +157,8 @@ function ViewQuote() {
   
   const subtotal = filamentTotal + hardwareTotal + powerCost + depreciationCost + labourCost;
   const markup = subtotal * (quote.markup_percent / 100);
+  const afterMarkup = subtotal + markup;
+  const discount = afterMarkup * ((quote.discount_percent || 0) / 100);
 
   return (
     <Box>
@@ -397,6 +399,11 @@ function ViewQuote() {
             <Typography variant="body1">
               Markup ({quote.markup_percent}%): {settings.currency_symbol}{markup.toFixed(2)}
             </Typography>
+            {quote.discount_percent > 0 && (
+              <Typography variant="body1" sx={{ color: 'error.main' }}>
+                Discount ({quote.discount_percent}%): -{settings.currency_symbol}{discount.toFixed(2)}
+              </Typography>
+            )}
             <Divider sx={{ my: 1 }} />
             <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
               Total: {settings.currency_symbol}{quote.total_cost.toFixed(2)}

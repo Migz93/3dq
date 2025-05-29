@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   Grid,
   TextField,
   Typography,
   Paper,
-  CircularProgress
+  CircularProgress,
+  InputAdornment
 } from '@mui/material';
+import SettingsContext from '../../context/SettingsContext';
 
 function JobInfo({ formData, handleInputChange, isEditMode }) {
+  const { settings } = useContext(SettingsContext);
   const [nextQuoteNumber, setNextQuoteNumber] = useState('');
   const [loading, setLoading] = useState(!isEditMode);
 
@@ -41,6 +44,18 @@ function JobInfo({ formData, handleInputChange, isEditMode }) {
       fetchNextQuoteNumber();
     }
   }, [isEditMode, handleInputChange, formData.quote_number]);
+  
+  // Initialize markup from settings if not set
+  useEffect(() => {
+    if (settings?.default_markup_percent && !formData.markup) {
+      handleInputChange({
+        target: {
+          name: 'markup',
+          value: parseFloat(settings.default_markup_percent)
+        }
+      });
+    }
+  }, [settings, formData.markup, handleInputChange]);
   return (
     <Paper sx={{ p: 3, mb: 3, backgroundColor: 'background.paper' }}>
       <Typography variant="h6" gutterBottom>
@@ -104,6 +119,43 @@ function JobInfo({ formData, handleInputChange, isEditMode }) {
               fullWidth
               multiline
               rows={3}
+            />
+          </Grid>
+          
+          {/* Pricing Section */}
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 'medium' }}>
+              Pricing Options
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="markup"
+              label="Markup Percentage"
+              type="number"
+              value={formData.markup || ''}
+              onChange={handleInputChange}
+              fullWidth
+              InputProps={{
+                endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                inputProps: { min: 0 }
+              }}
+            />
+          </Grid>
+          
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="discount"
+              label="Discount Percentage"
+              type="number"
+              value={formData.discount || 0}
+              onChange={handleInputChange}
+              fullWidth
+              InputProps={{
+                endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                inputProps: { min: 0, max: 100 }
+              }}
             />
           </Grid>
         </Grid>

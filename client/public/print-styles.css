@@ -1,0 +1,44 @@
+/* Print styles for 3DQ application */
+@media print {
+  /* Hide browser headers and footers */
+  @page {
+    margin: 1.5cm;
+    size: auto;
+  }
+  
+  @page :header {
+    display: none !important;
+  }
+  
+  @page :footer {
+    display: none !important;
+  }
+  
+  /* Hide UI elements that shouldn't be printed */
+  .no-print, 
+  button, 
+  .MuiAppBar-root,
+  .MuiDrawer-root {
+    display: none !important;
+  }
+  
+  /* Ensure content fills the page properly */
+  html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: visible !important;
+  }
+  
+  /* Remove background colors and shadows for better printing */
+  body {
+    background-color: white !important;
+  }
+  
+  /* Ensure text is black for better printing */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

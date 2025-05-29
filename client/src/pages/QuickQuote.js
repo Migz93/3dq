@@ -177,6 +177,7 @@ function QuickQuote() {
         date: new Date().toISOString().split('T')[0],
         notes: `Quick quote for ${quoteResult.filament.weight_grams}g of ${quoteResult.filament.name}, printed on ${quoteResult.printer.name} for ${quoteResult.printer.print_time_hours.toFixed(2)} hours.`,
         markup_percent: quoteResult.markup_percent,
+        discount_percent: 0, // Add discount_percent
         total_cost: quoteResult.total,
         is_quick_quote: true,
         
@@ -192,7 +193,7 @@ function QuickQuote() {
         ],
         
         // Print setup data
-        printSetup: {
+        print_setup: {
           printer_id: parseInt(formData.printer_id),
           printer_name: quoteResult.printer.name,
           print_time: quoteResult.printer.print_time,
@@ -213,7 +214,7 @@ function QuickQuote() {
       };
 
       // Save quote
-      const saveResponse = await fetch('/api/quotes', {
+      const saveResponse = await fetch('/api/quick-quote', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

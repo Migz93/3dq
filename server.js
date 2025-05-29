@@ -82,6 +82,7 @@ const createFilamentRoutes = require('./routes/filaments');
 const createPrinterRoutes = require('./routes/printers');
 const createHardwareRoutes = require('./routes/hardware');
 const createQuoteRoutes = require('./routes/quotes');
+const createQuickQuoteRoutes = require('./routes/quick_quote');
 const createSettingsRoutes = require('./routes/settings');
 
 // Initialize routes with the database instance
@@ -89,6 +90,7 @@ const filamentRoutes = createFilamentRoutes(db);
 const printerRoutes = createPrinterRoutes(db);
 const hardwareRoutes = createHardwareRoutes(db);
 const quoteRoutes = createQuoteRoutes(db);
+const quickQuoteRoutes = createQuickQuoteRoutes(db);
 const settingsRoutes = createSettingsRoutes(db);
 
 // Use routes
@@ -96,6 +98,7 @@ app.use('/api/filaments', filamentRoutes);
 app.use('/api/printers', printerRoutes);
 app.use('/api/hardware', hardwareRoutes);
 app.use('/api/quotes', quoteRoutes);
+app.use('/api/quick-quote', quickQuoteRoutes);
 app.use('/api/settings', settingsRoutes);
 
 // Serve static assets in production

@@ -53,7 +53,9 @@ function QuoteBuilder() {
     customer_name: '',
     title: '',
     date: new Date().toISOString().split('T')[0],
-    notes: ''
+    notes: '',
+    markup: 0,
+    discount: 0
   });
   
   const [quoteFilaments, setQuoteFilaments] = useState([]);
@@ -76,7 +78,7 @@ function QuoteBuilder() {
     total_cost: 0
   });
   
-  const [markup, setMarkup] = useState(0);
+  // Markup is now handled in formData
   const [totalCost, setTotalCost] = useState(0);
 
   // Fetch data from API
@@ -146,7 +148,7 @@ function QuoteBuilder() {
   
   // Fetch quote data if in edit mode
   useEffect(() => {
-    const fetchQuoteData = async () => {
+    const loadQuoteData = async () => {
       if (!isEditMode) return;
       
       try {
@@ -155,20 +157,22 @@ function QuoteBuilder() {
         if (!response.ok) {
           throw new Error('Failed to fetch quote');
         }
-        const quoteData = await response.json();
+        const data = await response.json();
         
         // Populate form data
         setFormData({
-          quote_number: quoteData.quote_number,
-          customer_name: quoteData.customer_name,
-          title: quoteData.title,
-          date: quoteData.date,
-          notes: quoteData.notes || ''
+          quote_number: data.quote_number,
+          customer_name: data.customer_name,
+          title: data.title || '',
+          date: data.date,
+          notes: data.notes || '',
+          markup: data.markup_percent || 0,
+          discount: data.discount_percent || 0
         });
         
         // Populate filaments
-        if (quoteData.filaments && quoteData.filaments.length > 0) {
-          setQuoteFilaments(quoteData.filaments.map(f => ({
+        if (data.filaments && data.filaments.length > 0) {
+          setQuoteFilaments(data.filaments.map(f => ({
             id: f.id,
             filament_id: f.filament_id,
             filament_name: f.filament_name,
@@ -181,8 +185,8 @@ function QuoteBuilder() {
         }
         
         // Populate hardware
-        if (quoteData.hardware && quoteData.hardware.length > 0) {
-          setQuoteHardware(quoteData.hardware.map(h => ({
+        if (data.hardware && data.hardware.length > 0) {
+          setQuoteHardware(data.hardware.map(h => ({
             id: h.id,
             hardware_id: h.hardware_id,
             hardware_name: h.hardware_name,
@@ -193,47 +197,75 @@ function QuoteBuilder() {
         }
         
         // Populate print setup
-        if (quoteData.printSetup) {
+        if (data.print_setup) {
           setPrintSetup({
-            printer_id: quoteData.printSetup.printer_id,
-            printer_name: quoteData.printSetup.printer_name,
-            print_time: quoteData.printSetup.print_time,
-            power_cost: quoteData.printSetup.power_cost,
-            depreciation_cost: quoteData.printSetup.depreciation_cost
+            printer_id: data.print_setup.printer_id,
+            printer_name: data.print_setup.printer_name,
+            print_time: data.print_setup.print_time,
+            power_cost: data.print_setup.power_cost,
+            depreciation_cost: data.print_setup.depreciation_cost
           });
         }
         
         // Populate labour
-        if (quoteData.labour) {
+        if (data.labour) {
           setLabour({
-            design_minutes: quoteData.labour.design_minutes,
-            preparation_minutes: quoteData.labour.preparation_minutes,
-            post_processing_minutes: quoteData.labour.post_processing_minutes,
-            other_minutes: quoteData.labour.other_minutes,
-            labour_rate_per_hour: quoteData.labour.labour_rate_per_hour,
-            total_cost: quoteData.labour.total_cost
+            design_minutes: data.labour.design_minutes,
+            preparation_minutes: data.labour.preparation_minutes,
+            post_processing_minutes: data.labour.post_processing_minutes,
+            other_minutes: data.labour.other_minutes,
+            labour_rate_per_hour: data.labour.labour_rate_per_hour,
+            total_cost: data.labour.total_cost
           });
         }
         
         // Set markup
-        setMarkup(quoteData.markup_percent);
-        setTotalCost(quoteData.total_cost);
+        setTotalCost(data.total_cost);
         
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching quote data:', error);
-        setError(error.message);
+        console.error('Error loading quote:', error);
+        setError('Failed to load quote. Please try again.');
         setLoading(false);
       }
     };
     
-    fetchQuoteData();
+    loadQuoteData();
   }, [id, isEditMode]);
 
-  // Handle form input change for job info
+  // Handle input changes for the form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+    
+    // Update markup state when it changes in formData
+    if (name === 'markup') {
+      setTotalCost(calculateTotalCost(formData.markup, formData.discount));
+    }
+    
+    // Update total when discount changes
+    if (name === 'discount') {
+      setTotalCost(calculateTotalCost(formData.markup, value));
+    }
+  };
+  
+  // Calculate total cost based on all components
+  const calculateTotalCost = (markupValue, discountValue) => {
+    const filamentTotal = quoteFilaments.reduce((sum, f) => sum + f.total_cost, 0);
+    const hardwareTotal = quoteHardware.reduce((sum, h) => sum + h.total_cost, 0);
+    const powerCost = printSetup.power_cost || 0;
+    const depreciationCost = printSetup.depreciation_cost || 0;
+    const labourCost = labour.total_cost || 0;
+    
+    const subtotal = filamentTotal + hardwareTotal + powerCost + depreciationCost + labourCost;
+    const markupAmount = subtotal * (markupValue / 100);
+    const afterMarkup = subtotal + markupAmount;
+    const discountAmount = afterMarkup * (discountValue / 100);
+    
+    return afterMarkup - discountAmount;
   };
 
   // Handle step navigation
@@ -288,13 +320,14 @@ function QuoteBuilder() {
 
     try {
       // Prepare quote data
-      let quoteData = {
+      const quoteData = {
         quote_number: formData.quote_number,
         title: formData.title,
         customer_name: formData.customer_name,
         date: formData.date,
         notes: formData.notes,
-        markup_percent: markup,
+        markup_percent: formData.markup,
+        discount_percent: formData.discount,
         total_cost: totalCost,
         is_quick_quote: false,
         
@@ -317,7 +350,7 @@ function QuoteBuilder() {
         })),
         
         // Print setup data
-        printSetup: {
+        print_setup: {
           printer_id: parseInt(printSetup.printer_id),
           printer_name: printSetup.printer_name,
           print_time: printSetup.print_time,
@@ -357,7 +390,9 @@ function QuoteBuilder() {
       const savedQuote = await saveResponse.json();
       
       // Navigate to the saved quote
-      navigate(`/quote/${savedQuote.id}`);
+      // For edit mode, use the existing ID if savedQuote.id is undefined
+      const quoteId = isEditMode ? (savedQuote.id || id) : savedQuote.id;
+      navigate(`/quote/${quoteId}`);
     } catch (error) {
       console.error('Error saving quote:', error);
       setError(error.message);
@@ -426,11 +461,11 @@ function QuoteBuilder() {
             quoteHardware={quoteHardware}
             printSetup={printSetup}
             labour={labour}
-            markup={markup}
-            setMarkup={setMarkup}
+            markup={formData.markup}
             totalCost={totalCost}
             setTotalCost={setTotalCost}
             currencySymbol={settings.currency_symbol}
+            discount={formData.discount}
           />
         );
       default:

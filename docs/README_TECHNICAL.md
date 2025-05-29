@@ -351,6 +351,14 @@ Check the server logs for detailed error messages. Most API errors will be logge
 
 ## UI/UX Features
 
+### Recent Updates
+
+### Discount Feature
+- Added `discount_percent` column to the quotes table
+- Implemented discount calculation in the quote builder and view quote pages
+- Updated invoice templates to display subtotal, discount, and final total
+
+
 ### Responsive Design
 
 The 3DQ application is designed to be responsive and work well on both desktop and mobile devices. Key responsive features include:
