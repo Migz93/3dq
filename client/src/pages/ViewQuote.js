@@ -153,8 +153,10 @@ function ViewQuote() {
   const powerCost = quote.printSetup?.power_cost || 0;
   const depreciationCost = quote.printSetup?.depreciation_cost || 0;
   const labourCost = quote.labour?.total_cost || 0;
-  
-  const subtotal = filamentTotal + hardwareTotal + powerCost + depreciationCost + labourCost;
+
+  const totalDirectCost = filamentTotal + hardwareTotal + powerCost + depreciationCost; // Hardware moved to Direct Costs
+  // totalIndirectCost is no longer needed as a separate sum for display
+  const subtotal = totalDirectCost + labourCost; // Subtotal is now Direct Costs + Labour
   const markup = subtotal * (quote.markup_percent / 100);
   const afterMarkup = subtotal + markup;
   const discount = afterMarkup * ((quote.discount_percent || 0) / 100);
@@ -333,63 +335,82 @@ function ViewQuote() {
       {quote.labour && (
         <Paper sx={{ p: 3, mb: 4, backgroundColor: 'background.paper' }}>
           <Typography variant="h6" sx={{ mb: 2 }}>Labour</Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={3}>
-              <Typography variant="subtitle1">Design</Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>{quote.labour.design_minutes} min</Typography>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <Typography variant="subtitle1">Preparation</Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>{quote.labour.preparation_minutes} min</Typography>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <Typography variant="subtitle1">Post Processing</Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>{quote.labour.post_processing_minutes} min</Typography>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <Typography variant="subtitle1">Other</Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>{quote.labour.other_minutes} min</Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle1">Labour Rate</Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                {settings.currency_symbol}{quote.labour.labour_rate_per_hour.toFixed(2)} per hour
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle1">Total Labour Cost</Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                {settings.currency_symbol}{quote.labour.total_cost.toFixed(2)}
-              </Typography>
-            </Grid>
-          </Grid>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Task Type</TableCell>
+                  <TableCell align="right">Time Spent (min)</TableCell>
+                  <TableCell align="right">Hourly Rate</TableCell>
+                  <TableCell align="right">Task Cost</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {[
+                  { name: 'Design', minutes: quote.labour.design_minutes },
+                  { name: 'Preparation', minutes: quote.labour.preparation_minutes },
+                  { name: 'Post Processing', minutes: quote.labour.post_processing_minutes },
+                  { name: 'Other', minutes: quote.labour.other_minutes },
+                ]
+                .filter(task => task.minutes > 0)
+                .map((task, index) => {
+                  const taskCost = (task.minutes / 60) * quote.labour.labour_rate_per_hour;
+                  return (
+                    <TableRow key={index}>
+                      <TableCell>{task.name}</TableCell>
+                      <TableCell align="right">{task.minutes}</TableCell>
+                      <TableCell align="right">
+                        {settings.currency_symbol}{quote.labour.labour_rate_per_hour.toFixed(2)}
+                      </TableCell>
+                      <TableCell align="right">
+                        {settings.currency_symbol}{taskCost.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                <TableRow>
+                  <TableCell colSpan={3} align="right"><strong>Total Labour Cost</strong></TableCell>
+                  <TableCell align="right">
+                    <strong>{settings.currency_symbol}{labourCost.toFixed(2)}</strong>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Paper>
       )}
 
       {/* Cost Summary */}
       <Paper sx={{ p: 3, backgroundColor: 'background.paper' }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>Cost Summary</Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body1">Filament Cost: {settings.currency_symbol}{filamentTotal.toFixed(2)}</Typography>
-            <Typography variant="body1">Hardware Cost: {settings.currency_symbol}{hardwareTotal.toFixed(2)}</Typography>
-            <Typography variant="body1">Power Cost: {settings.currency_symbol}{powerCost.toFixed(2)}</Typography>
-            <Typography variant="body1">Depreciation: {settings.currency_symbol}{depreciationCost.toFixed(2)}</Typography>
-            <Typography variant="body1">Labour Cost: {settings.currency_symbol}{labourCost.toFixed(2)}</Typography>
+        <Typography variant="h6" component="h2" sx={{ mb: 2 }}>Cost Summary</Typography>
+        <Grid container spacing={3}>
+          {/* Column 1: Direct Costs */}
+          <Grid item xs={12} md={6}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Direct Costs</Typography>
+            <Typography variant="body2">Filament: {settings.currency_symbol}{filamentTotal.toFixed(2)}</Typography>
+            <Typography variant="body2">Hardware: {settings.currency_symbol}{hardwareTotal.toFixed(2)}</Typography>
+            <Typography variant="body2">Power: {settings.currency_symbol}{powerCost.toFixed(2)}</Typography>
+            <Typography variant="body2">Depreciation: {settings.currency_symbol}{depreciationCost.toFixed(2)}</Typography>
+            <Divider sx={{ my: 1 }} />
+            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Total Direct Costs: {settings.currency_symbol}{totalDirectCost.toFixed(2)}</Typography>
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body1">Subtotal: {settings.currency_symbol}{subtotal.toFixed(2)}</Typography>
-            <Typography variant="body1">
-              Markup ({quote.markup_percent}%): {settings.currency_symbol}{markup.toFixed(2)}
-            </Typography>
+
+          {/* Column 2: Financial Summary (including Labour) */}
+          <Grid item xs={12} md={6}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Quote Financials</Typography>
+            <Typography variant="body2">Labour Cost: {settings.currency_symbol}{labourCost.toFixed(2)}</Typography>
+            <Divider sx={{ my: 1 }} />
+            <Typography variant="body2">Subtotal (Direct + Labour): {settings.currency_symbol}{subtotal.toFixed(2)}</Typography>
+            <Typography variant="body2">Markup ({quote.markup_percent}%): +{settings.currency_symbol}{markup.toFixed(2)}</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Subtotal (After Markup): {settings.currency_symbol}{afterMarkup.toFixed(2)}</Typography>
             {quote.discount_percent > 0 && (
-              <Typography variant="body1" sx={{ color: 'error.main' }}>
+              <Typography variant="body2" sx={{ color: 'error.main' }}>
                 Discount ({quote.discount_percent}%): -{settings.currency_symbol}{discount.toFixed(2)}
               </Typography>
             )}
             <Divider sx={{ my: 1 }} />
             <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              Total: {settings.currency_symbol}{quote.total_cost.toFixed(2)}
+              Final Total: {settings.currency_symbol}{quote.total_cost.toFixed(2)}
             </Typography>
           </Grid>
         </Grid>
