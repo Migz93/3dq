@@ -29,6 +29,7 @@ import {
   Edit as EditIcon
 } from '@mui/icons-material';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import DescriptionIcon from '@mui/icons-material/Description'; // Added for invoice buttons
 import SettingsContext from '../context/SettingsContext';
 
 function ViewQuote() {
@@ -150,8 +151,8 @@ function ViewQuote() {
   // Calculate totals
   const filamentTotal = quote.filaments?.reduce((sum, f) => sum + f.total_cost, 0) || 0;
   const hardwareTotal = quote.hardware?.reduce((sum, h) => sum + h.total_cost, 0) || 0;
-  const powerCost = quote.printSetup?.power_cost || 0;
-  const depreciationCost = quote.printSetup?.depreciation_cost || 0;
+  const powerCost = quote.print_setup?.power_cost || 0;
+  const depreciationCost = quote.print_setup?.depreciation_cost || 0;
   const labourCost = quote.labour?.total_cost || 0;
 
   const totalDirectCost = filamentTotal + hardwareTotal + powerCost + depreciationCost; // Hardware moved to Direct Costs
@@ -161,6 +162,22 @@ function ViewQuote() {
   const afterMarkup = subtotal + markup;
   const discount = afterMarkup * ((quote.discount_percent || 0) / 100);
 
+  const formatPrintTime = (totalMinutes) => {
+    if (totalMinutes === null || totalMinutes === undefined || totalMinutes === 0) {
+      return 'N/A';
+    }
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    const minutes = totalMinutes % 60;
+    
+    let formattedTime = '';
+    if (days > 0) formattedTime += `${days}d `;
+    if (hours > 0) formattedTime += `${hours}h `;
+    if (minutes > 0) formattedTime += `${minutes}m`;
+    
+    return formattedTime.trim() || '0m';
+  };
+
   return (
     <Box>
       <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -168,13 +185,13 @@ function ViewQuote() {
           {quote.title}
         </Typography>
         <Box>
-          <Button variant="contained" component={Link} to={`/quotes/${id}/edit`} startIcon={<EditIcon />}>
+          <Button variant="contained" component={Link} to={`/quote/edit/${id}`} startIcon={<EditIcon />}>
             Edit Quote
           </Button>
-          <Button variant="outlined" onClick={() => generateInvoice('client')} startIcon={<PictureAsPdfIcon />}>
+          <Button variant="outlined" onClick={() => generateInvoice('client')} startIcon={<DescriptionIcon />}>
             Client Invoice
           </Button>
-          <Button variant="outlined" onClick={() => generateInvoice('internal')} startIcon={<PictureAsPdfIcon />}>
+          <Button variant="outlined" onClick={() => generateInvoice('internal')} startIcon={<DescriptionIcon />}>
             Internal Invoice
           </Button>
           <Button
@@ -210,10 +227,6 @@ function ViewQuote() {
             <Typography variant="subtitle1">Date</Typography>
             <Typography variant="body1" sx={{ mb: 2 }}>{quote.date}</Typography>
             
-            <Typography variant="subtitle1">Status</Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              {quote.is_quick_quote ? 'Quick Quote' : 'Standard Quote'}
-            </Typography>
           </Grid>
           {quote.notes && (
             <Grid item xs={12}>
@@ -303,31 +316,45 @@ function ViewQuote() {
       )}
 
       {/* Print Setup Section */}
-      {quote.printSetup && (
+      {quote.print_setup && (
         <Paper sx={{ p: 3, mb: 4, backgroundColor: 'background.paper' }}>
           <Typography variant="h6" sx={{ mb: 2 }}>Print Setup</Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle1">Printer</Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>{quote.printSetup.printer_name}</Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle1">Print Time</Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>{quote.printSetup.print_time} hours</Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle1">Power Cost</Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                {settings.currency_symbol}{quote.printSetup.power_cost.toFixed(2)}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="subtitle1">Depreciation Cost</Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                {settings.currency_symbol}{quote.printSetup.depreciation_cost.toFixed(2)}
-              </Typography>
-            </Grid>
-          </Grid>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            {quote.print_setup.printer_name} - Print Duration: {formatPrintTime(quote.print_setup.print_time)}
+          </Typography>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Item</TableCell>
+                  <TableCell align="right">Cost</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <TableRow>
+                  <TableCell>Power Cost</TableCell>
+                  <TableCell align="right">
+                    {settings.currency_symbol}{quote.print_setup.power_cost.toFixed(2)}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Depreciation Cost</TableCell>
+                  <TableCell align="right">
+                    {settings.currency_symbol}{quote.print_setup.depreciation_cost.toFixed(2)}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell><strong>Total Print Setup Cost</strong></TableCell>
+                  <TableCell align="right">
+                    <strong>
+                      {settings.currency_symbol}
+                      {(quote.print_setup.power_cost + quote.print_setup.depreciation_cost).toFixed(2)}
+                    </strong>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Paper>
       )}
 
@@ -380,41 +407,37 @@ function ViewQuote() {
         </Paper>
       )}
 
-      {/* Cost Summary */}
-      <Paper sx={{ p: 3, backgroundColor: 'background.paper' }}>
-        <Typography variant="h6" component="h2" sx={{ mb: 2 }}>Cost Summary</Typography>
-        <Grid container spacing={3}>
-          {/* Column 1: Direct Costs */}
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Direct Costs</Typography>
+      {/* Cost Summary Title */}
+      <Typography variant="h6" component="h2" sx={{ mb: 2 }}>Cost Summary</Typography>
+      <Grid container spacing={3} sx={{ mb: 4 }}> {/* Added mb for spacing after this section */}
+        {/* Left Box: Cost Breakdown */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, backgroundColor: 'background.paper', height: '100%' }}> {/* Added height 100% for equal height if desired */}
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Cost Breakdown</Typography>
             <Typography variant="body2">Filament: {settings.currency_symbol}{filamentTotal.toFixed(2)}</Typography>
             <Typography variant="body2">Hardware: {settings.currency_symbol}{hardwareTotal.toFixed(2)}</Typography>
             <Typography variant="body2">Power: {settings.currency_symbol}{powerCost.toFixed(2)}</Typography>
             <Typography variant="body2">Depreciation: {settings.currency_symbol}{depreciationCost.toFixed(2)}</Typography>
-            <Divider sx={{ my: 1 }} />
-            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Total Direct Costs: {settings.currency_symbol}{totalDirectCost.toFixed(2)}</Typography>
-          </Grid>
+            <Typography variant="body2">Labour: {settings.currency_symbol}{labourCost.toFixed(2)}</Typography>
+          </Paper>
+        </Grid>
 
-          {/* Column 2: Financial Summary (including Labour) */}
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Quote Financials</Typography>
-            <Typography variant="body2">Labour Cost: {settings.currency_symbol}{labourCost.toFixed(2)}</Typography>
-            <Divider sx={{ my: 1 }} />
-            <Typography variant="body2">Subtotal (Direct + Labour): {settings.currency_symbol}{subtotal.toFixed(2)}</Typography>
+        {/* Right Box: Financial Summary */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, backgroundColor: 'background.paper', height: '100%' }}> {/* Added height 100% for equal height if desired */}
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Financial Summary</Typography>
+            <Typography variant="body2">Production Cost: {settings.currency_symbol}{totalDirectCost.toFixed(2)}</Typography>
+            <Typography variant="body2">Subtotal (All Costs): {settings.currency_symbol}{subtotal.toFixed(2)}</Typography>
             <Typography variant="body2">Markup ({quote.markup_percent}%): +{settings.currency_symbol}{markup.toFixed(2)}</Typography>
-            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Subtotal (After Markup): {settings.currency_symbol}{afterMarkup.toFixed(2)}</Typography>
             {quote.discount_percent > 0 && (
-              <Typography variant="body2" sx={{ color: 'error.main' }}>
-                Discount ({quote.discount_percent}%): -{settings.currency_symbol}{discount.toFixed(2)}
-              </Typography>
+              <Typography variant="body2" sx={{ color: 'error.main' }}>Discount ({quote.discount_percent}%): -{settings.currency_symbol}{discount.toFixed(2)}</Typography>
             )}
             <Divider sx={{ my: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              Final Total: {settings.currency_symbol}{quote.total_cost.toFixed(2)}
-            </Typography>
-          </Grid>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Final Price: {settings.currency_symbol}{(afterMarkup - discount).toFixed(2)}</Typography>
+          </Paper>
         </Grid>
-      </Paper>
+      </Grid>
+
 
       {/* Delete Confirmation Dialog */}
       <Dialog
