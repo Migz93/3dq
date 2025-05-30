@@ -141,7 +141,32 @@ module.exports = (db) => {
             const type = filamentData.material || 'PLA';
             const diameter = filamentData.diameter || 1.75;
             const density = filamentData.density || 1.24;
-            const color = filamentData.color_hex || '#000000';
+            
+            // Handle color code - check for both single color and multi-color
+            let color;
+            
+            if (filamentData.color_hex) {
+              // Single color case
+              color = filamentData.color_hex;
+            } else if (filamentData.multi_color_hexes) {
+              // Multi-color case - take the first color
+              const multiColors = filamentData.multi_color_hexes.split(',');
+              if (multiColors.length > 0) {
+                color = multiColors[0].trim();
+                console.log(`Multi-color filament detected. Using first color: ${color}`);
+              }
+            }
+            
+            // Default color if none found
+            if (!color) {
+              color = '000000';
+            }
+            
+            // Ensure color code has # prefix
+            if (color && !color.startsWith('#')) {
+              color = '#' + color;
+            }
+            
             const link = vendorData.website || null;
             
             console.log(`Processing spool: ${name}, type: ${type}, color: ${color}`);

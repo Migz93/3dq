@@ -44,6 +44,7 @@ function FilamentPage() {
   const [error, setError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [spoolmanWarningDialogOpen, setSpoolmanWarningDialogOpen] = useState(false);
   const [currentFilament, setCurrentFilament] = useState(null);
   const [tabValue, setTabValue] = useState(0);
   const [syncing, setSyncing] = useState(false);
@@ -151,6 +152,17 @@ function FilamentPage() {
 
   // Handle form submission
   const handleSubmit = async () => {
+    // Check if this is a Spoolman-synced filament being edited
+    if (currentFilament && currentFilament.spoolman_synced) {
+      setSpoolmanWarningDialogOpen(true);
+      return;
+    }
+    
+    await saveFilament();
+  };
+  
+  // Actual save function after confirmation
+  const saveFilament = async () => {
     try {
       const url = currentFilament 
         ? `/api/filaments/${currentFilament.id}` 
@@ -181,10 +193,16 @@ function FilamentPage() {
       }
       
       handleCloseDialog();
+      setSpoolmanWarningDialogOpen(false);
     } catch (error) {
       console.error('Error saving filament:', error);
       setError(error.message);
     }
+  };
+  
+  // Close Spoolman warning dialog
+  const handleCloseSpoolmanWarningDialog = () => {
+    setSpoolmanWarningDialogOpen(false);
   };
 
   // Open delete confirmation dialog
@@ -557,7 +575,7 @@ function FilamentPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 name="link"
                 label="Link (optional)"
@@ -567,11 +585,51 @@ function FilamentPage() {
                 placeholder="e.g., https://amazon.com/..."
               />
             </Grid>
+            {currentFilament && (
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Synced with Spoolman"
+                  value={currentFilament.spoolman_synced ? "Yes" : "No"}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  fullWidth
+                  disabled
+                />
+              </Grid>
+            )}
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">Save</Button>
+        <DialogActions sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Box>
+            {currentFilament && (
+              <>
+                <Button 
+                  onClick={() => {
+                    handleCloseDialog();
+                    handleDeleteClick(currentFilament);
+                  }} 
+                  color="error" 
+                  sx={{ mr: 1 }}
+                >
+                  Delete
+                </Button>
+                <Button 
+                  onClick={() => {
+                    handleCloseDialog();
+                    handleToggleArchive(currentFilament);
+                  }} 
+                  color="secondary"
+                >
+                  {currentFilament.status === 'Active' ? 'Archive' : 'Unarchive'}
+                </Button>
+              </>
+            )}
+          </Box>
+          <Box>
+            <Button onClick={handleCloseDialog} sx={{ mr: 1 }}>Cancel</Button>
+            <Button onClick={handleSubmit} variant="contained">Save</Button>
+          </Box>
         </DialogActions>
       </Dialog>
 
@@ -592,6 +650,23 @@ function FilamentPage() {
         <DialogActions>
           <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
           <Button onClick={handleDeleteFilament} color="error">Delete</Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Spoolman Warning Dialog */}
+      <Dialog
+        open={spoolmanWarningDialogOpen}
+        onClose={handleCloseSpoolmanWarningDialog}
+      >
+        <DialogTitle>If you save this will unlink this spool from spoolman.</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            Make sure you intend to do this, if the original spool still exists in spoolman when you next sync it will reimport it and you may end up with a duplicate. Ideally make your change directly in spoolman.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSpoolmanWarningDialog}>Cancel</Button>
+          <Button onClick={saveFilament} color="warning" variant="contained">I Understand</Button>
         </DialogActions>
       </Dialog>
     </Box>

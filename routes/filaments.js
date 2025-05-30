@@ -127,6 +127,16 @@ router.put('/:id', (req, res) => {
     if (!filament) {
       return res.status(404).json({ error: 'Filament not found' });
     }
+    
+    // If this is a Spoolman-synced filament being edited, unlink it from Spoolman
+    let updatedSpoolmanSynced = spoolman_synced;
+    let updatedSpoolmanId = spoolman_id;
+    
+    if (filament.spoolman_synced) {
+      console.log(`Unlinking filament ${filament.id} from Spoolman`);
+      updatedSpoolmanSynced = 0;
+      updatedSpoolmanId = null;
+    }
 
     const stmt = db.prepare(`
       UPDATE filaments SET
@@ -146,6 +156,16 @@ router.put('/:id', (req, res) => {
       WHERE id = ?
     `);
 
+    // If this is a Spoolman-synced filament being edited, unlink it from Spoolman
+    let finalSpoolmanId = spoolman_id;
+    let finalSpoolmanSynced = spoolman_synced;
+    
+    if (filament.spoolman_synced) {
+      console.log(`Unlinking filament ${filament.id} from Spoolman`);
+      finalSpoolmanId = null;
+      finalSpoolmanSynced = 0;
+    }
+    
     stmt.run(
       name,
       type,
@@ -157,8 +177,8 @@ router.put('/:id', (req, res) => {
       color,
       link || null,
       status || 'Active',
-      spoolman_id || null,
-      spoolman_synced !== undefined ? spoolman_synced : filament.spoolman_synced,
+      finalSpoolmanId,
+      finalSpoolmanSynced,
       req.params.id
     );
 
