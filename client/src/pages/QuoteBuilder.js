@@ -297,7 +297,7 @@ function QuoteBuilder() {
   const validateStep = () => {
     switch (activeStep) {
       case 0: // Job Info
-        return formData.customer_name && formData.date;
+        return formData.customer_name && formData.date && formData.title;
       case 1: // Filament
         return quoteFilaments.length > 0 && quoteFilaments.every(f => f.grams_used > 0);
       case 2: // Hardware
@@ -329,7 +329,6 @@ function QuoteBuilder() {
         markup_percent: formData.markup,
         discount_percent: formData.discount,
         total_cost: totalCost,
-        is_quick_quote: false,
         
         // Filament data
         filaments: quoteFilaments.map(f => ({

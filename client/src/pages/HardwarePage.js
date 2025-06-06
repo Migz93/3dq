@@ -21,7 +21,8 @@ import {
   TextField,
   InputAdornment,
   Tabs,
-  Tab
+  Tab,
+  Popover
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -29,7 +30,10 @@ import {
   Delete as DeleteIcon,
   Archive as ArchiveIcon,
   Unarchive as UnarchiveIcon,
-  Link as LinkIcon
+  Link as LinkIcon,
+  FilterList as FilterIcon,
+  ArrowUpward as ArrowUpIcon,
+  ArrowDownward as ArrowDownIcon
 } from '@mui/icons-material';
 import SettingsContext from '../context/SettingsContext';
 
@@ -41,6 +45,14 @@ function HardwarePage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentHardware, setCurrentHardware] = useState(null);
   const [tabValue, setTabValue] = useState(0);
+  
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  
+  // Filtering state
+  const [filterConfig, setFilterConfig] = useState({});
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+  const [currentFilterColumn, setCurrentFilterColumn] = useState(null);
   
   const { settings } = useContext(SettingsContext);
 
@@ -231,11 +243,84 @@ function HardwarePage() {
     );
   }
 
-  // Filter hardware based on active tab
+  // Sort function
+  const sortedData = (data) => {
+    if (sortConfig.key) {
+      return [...data].sort((a, b) => {
+        // Handle numeric fields
+        if (['unit_price'].includes(sortConfig.key)) {
+          if (sortConfig.direction === 'asc') {
+            return parseFloat(a[sortConfig.key]) - parseFloat(b[sortConfig.key]);
+          }
+          return parseFloat(b[sortConfig.key]) - parseFloat(a[sortConfig.key]);
+        }
+        
+        // Handle string fields
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return data;
+  };
+  
+  // Request sort handler
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  // Filter handlers
+  const handleFilterClick = (event, column) => {
+    setCurrentFilterColumn(column);
+    setFilterAnchorEl(event.currentTarget);
+  };
+  
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+  
+  const handleFilterChange = (event) => {
+    const { value } = event.target;
+    setFilterConfig(prev => ({
+      ...prev,
+      [currentFilterColumn]: value
+    }));
+  };
+  
+  const handleFilterClear = () => {
+    setFilterConfig(prev => {
+      const newConfig = { ...prev };
+      delete newConfig[currentFilterColumn];
+      return newConfig;
+    });
+    handleFilterClose();
+  };
+  
+  // Filter hardware based on active tab and filter config
   const filteredHardware = hardware.filter(item => {
-    if (tabValue === 0) return item.status === 'Active';
-    return item.status === 'Archived';
+    // First filter by tab (active/archived)
+    if (tabValue === 0 && item.status !== 'Active') return false;
+    if (tabValue === 1 && item.status !== 'Archived') return false;
+    
+    // Then apply column filters
+    return Object.entries(filterConfig).every(([key, value]) => {
+      if (!value) return true;
+      
+      const itemValue = String(item[key]).toLowerCase();
+      return itemValue.includes(value.toLowerCase());
+    });
   });
+  
+  // Apply sorting to filtered data
+  const sortedHardware = sortedData(filteredHardware);
 
   return (
     <Box>
@@ -259,7 +344,7 @@ function HardwarePage() {
         </Tabs>
       </Box>
 
-      {filteredHardware.length === 0 ? (
+      {sortedHardware.length === 0 ? (
         <Card sx={{ mb: 4, backgroundColor: 'background.paper' }}>
           <CardContent>
             <Typography variant="h6" align="center" sx={{ py: 4 }}>
@@ -285,14 +370,38 @@ function HardwarePage() {
           <Table sx={{ minWidth: 500 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Unit Price</TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('name')}>
+                      Name
+                      {sortConfig.key === 'name' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'name')}>
+                      <FilterIcon fontSize="small" color={filterConfig.name ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('unit_price')}>
+                      Unit Price
+                      {sortConfig.key === 'unit_price' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'unit_price')}>
+                      <FilterIcon fontSize="small" color={filterConfig.unit_price ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
                 <TableCell>Link</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredHardware.map((item) => (
+              {sortedHardware.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell sx={{ maxWidth: { xs: '80px', sm: '200px' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.name}
@@ -401,17 +510,46 @@ function HardwarePage() {
         <DialogTitle>Delete Hardware</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete the hardware item "{currentHardware?.name}"? This action cannot be undone.
-          </Typography>
-          <Typography sx={{ mt: 2, color: 'warning.main' }}>
-            Note: You cannot delete a hardware item that is used in any quotes. Consider archiving it instead.
+            Are you sure you want to delete the hardware "{currentHardware?.name}"? This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
-          <Button onClick={handleDeleteHardware} color="error">Delete</Button>
+          <Button onClick={handleDeleteHardware} color="error">
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
+      
+      {/* Filter Popover */}
+      <Popover
+        open={Boolean(filterAnchorEl)}
+        anchorEl={filterAnchorEl}
+        onClose={handleFilterClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1, minWidth: 200 }}>
+          <TextField
+            label={`Filter by ${currentFilterColumn}`}
+            value={filterConfig[currentFilterColumn] || ''}
+            onChange={handleFilterChange}
+            variant="outlined"
+            size="small"
+            autoFocus
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+            <Button size="small" onClick={handleFilterClear} color="error">
+              Clear
+            </Button>
+            <Button size="small" onClick={handleFilterClose} variant="contained">
+              Apply
+            </Button>
+          </Box>
+        </Box>
+      </Popover>
     </Box>
   );
 }

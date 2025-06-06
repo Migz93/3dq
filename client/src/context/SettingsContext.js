@@ -7,7 +7,7 @@ const SettingsContext = createContext({
     default_markup_percent: 50,
     currency_symbol: '£',
     quote_prefix: '3DQ',
-    accent_color: '#3498db',
+    accent_color: '#E53935',
     company_name: 'Prints Inc'
   },
   setSettings: () => {}

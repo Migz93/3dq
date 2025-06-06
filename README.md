@@ -1,8 +1,16 @@
-# 3DQ - 3D Printing Quote Tool
+<p align="center">
+  <img src="assets/images/Logo.svg" alt="3DQ Logo"/>
+</p>
 
-3DQ is a comprehensive self-hosted quoting tool for 3D-printed parts. It helps you calculate accurate quotes for 3D printing jobs by considering filament costs, printer depreciation, power usage, labor, and more. This tool is designed for 3D printing businesses and hobbyists who need to provide professional quotes to their clients.
+3DQ is a self-hosted quoting tool for 3D prints.
+It helps you calculate quotes for 3D printing jobs by considering filament costs, power usage, printer depreciation, labor, and more.
 
-![3DQ Screenshot](https://via.placeholder.com/800x450.png?text=3DQ+Screenshot)
+# Preview
+
+![Home Page](./assets/screenshots/Screenshot_Home.jpg)
+![Quote](./assets/screenshots/Screenshot_Quote.jpg)
+![Invoice](./assets/screenshots/Screenshot_Invoice.jpg)
+![InvoiceInternal](./assets/screenshots/Screenshot_InvoiceInternal.jpg)
 
 ## Features
 
@@ -10,7 +18,7 @@
 - **Quote Builder**: Create detailed quotes with a step-by-step process
 - **Quick Quote**: Generate fast quotes with minimal inputs
 - **Quote Viewing & History**: View detailed quote information, including print setup (printer, duration, power/depreciation costs) and a comprehensive cost summary (breakdown of production costs and financial totals). Manage all past quotes.
-- **HTML Invoices**: Generate client-friendly or detailed internal invoices with print functionality
+- **HTML Invoices**: Generate client-friendly or detailed internal invoices with print functionality that inherits your brand colors
 - **Historical Accuracy**: Quotes maintain their original values even when settings change
 - **Discount Support**: Apply percentage-based discounts to quotes that are reflected in invoices
 - **Clearer Invoice Icons**: Updated icons for generating client and internal invoices.
@@ -20,6 +28,13 @@
 - **Spoolman Integration**: Sync filaments with Spoolman, a filament management system
 - **Printer Management**: Configure your printers with depreciation and power usage calculations
 - **Hardware Management**: Track additional components used in prints (screws, magnets, etc.)
+
+### UI/UX Features
+- **Consistent Branding**: Professional logo and favicon for a polished look
+- **Customizable Accent Color**: Personalize the application with your brand color throughout the interface
+- **Responsive Design**: Works on desktop and mobile devices
+- **Branded Invoices**: Invoices automatically use your accent color for a consistent brand experience
+- **Intuitive Navigation**: Clear page titles and organized sidebar for easy access to all features
 
 ### Settings & Configuration
 - **Global Settings**: Configure electricity costs, labor rates, default markup percentage
@@ -82,7 +97,7 @@ docker-compose up -d
 4. Start the application: `npm start`
 5. Access the application at http://localhost:6123
 
-For detailed installation instructions, see the [Technical README](TECHNICAL_README.md).
+
 
 ## Usage Guide
 
@@ -101,9 +116,14 @@ To use the Spoolman integration:
 The integration preserves all the important data from Spoolman including:
 - Vendor information
 - Material type
-- Color (including hex color codes)
+- Color (including hex color codes and support for multi-color filaments)
 - Weight and price information
 - Density and diameter
+
+**Important Notes:**
+- Editing a Spoolman-synced filament will unlink it from Spoolman (with a warning dialog)
+- The filament page shows which filaments are synced from Spoolman
+- Multi-color filaments from Spoolman are supported (using the first color in the list)
 
 ### Initial Setup
 
@@ -143,9 +163,15 @@ All your data is stored locally:
 - **Quote Data**: All quote information is stored in the database for easy access and invoice generation
 - **Example Data**: The application includes an example quote (Tardis Lightbox) with realistic values to help you understand how the system works
 
-## Troubleshooting
+## Security Notice
 
-If you encounter any issues, check the [Technical README](TECHNICAL_README.md) for troubleshooting tips.
+3DQ was developed with the use of AI technologies (Windsurf with Claude 3.7 Sonnet). We can't verify that best practices were followed nor that the code is free of vulnerabilities.
+Therefore we recommend:
+
+- **Local Network Only**: For optimal security, run 3DQ on your local network rather than exposing it directly to the internet
+- **Use VPN**: If remote access is needed, consider using a VPN
+- **Regular Backups**: Keep regular backups of your database file located in the config directory
+- **Updates**: Check for updates regularly as security improvements may be released
 
 ## Contributing
 

@@ -89,7 +89,6 @@ function initDb() {
       notes TEXT,
       markup_percent REAL NOT NULL,
       total_cost REAL NOT NULL,
-      is_quick_quote BOOLEAN NOT NULL DEFAULT 0,
       discount_percent REAL DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -160,10 +159,10 @@ function initDb() {
   const defaultSettings = [
     { key: 'electricity_cost_per_kwh', value: '0.2166' },
     { key: 'labour_rate_per_hour', value: '13.00' },
-    { key: 'default_markup_percent', value: '50' },
+    { key: 'default_markup_percent', value: '75' },
     { key: 'currency_symbol', value: '£' },
     { key: 'quote_prefix', value: '3DQ' },
-    { key: 'accent_color', value: '#3498db' },
+    { key: 'accent_color', value: '#E53935' },
     { key: 'company_name', value: 'Prints Inc' },
     { key: 'spoolman_sync_enabled', value: 'false' },
     { key: 'spoolman_url', value: 'http://localhost:7912' }
@@ -288,15 +287,14 @@ function initDb() {
       customer_name: 'John Smith',
       date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
       notes: 'Lightbox designed on makerworld.',
-      markup_percent: 50.0,
+      markup_percent: 75.0,
       total_cost: 21.625268,
-      is_quick_quote: 0,
       discount_percent: 5.0
     };
 
     // Insert example quote
     const insertQuote = db.prepare(
-      'INSERT INTO quotes (quote_number, title, customer_name, date, notes, markup_percent, total_cost, is_quick_quote, discount_percent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO quotes (quote_number, title, customer_name, date, notes, markup_percent, total_cost, discount_percent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     );
     
     const quoteId = insertQuote.run(
@@ -307,7 +305,6 @@ function initDb() {
       exampleQuote.notes,
       exampleQuote.markup_percent,
       exampleQuote.total_cost,
-      exampleQuote.is_quick_quote,
       exampleQuote.discount_percent
     ).lastInsertRowid;
     

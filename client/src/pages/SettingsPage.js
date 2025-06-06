@@ -45,7 +45,7 @@ function SettingsPage() {
         default_markup_percent: settings.default_markup_percent || '',
         currency_symbol: settings.currency_symbol || '',
         quote_prefix: settings.quote_prefix || '',
-        accent_color: settings.accent_color || '#3498db',
+        accent_color: settings.accent_color || '#E53935',
         company_name: settings.company_name || 'Prints Inc',
         spoolman_sync_enabled: settings.spoolman_sync_enabled || 'false',
         spoolman_url: settings.spoolman_url || 'http://localhost:7912'
@@ -134,7 +134,7 @@ function SettingsPage() {
 
   // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setSaving(true);
     setError(null);
 
@@ -179,14 +179,24 @@ function SettingsPage() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" sx={{ mb: 4 }}>
-        Settings
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography variant="h4" component="h1">
+          Settings
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSubmit}
+          disabled={saving}
+        >
+          {saving ? <CircularProgress size={24} /> : 'Save Settings'}
+        </Button>
+      </Box>
 
       <Card sx={{ mb: 4, backgroundColor: 'background.paper' }}>
         <CardHeader title="General Settings" />
         <CardContent>
-          <Box component="form" onSubmit={handleSubmit}>
+          <Box>
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -271,22 +281,41 @@ function SettingsPage() {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  name="accent_color"
-                  label="Accent Color"
-                  type="color"
-                  value={formData.accent_color}
-                  onChange={handleInputChange}
-                  fullWidth
-                  required
-                  sx={{
-                    '& input': {
-                      height: 40,
-                      cursor: 'pointer'
-                    }
-                  }}
-                  helperText="App accent color (requires page refresh to fully apply)"
-                />
+                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                    <TextField
+                      name="accent_color"
+                      label="Accent Color"
+                      type="color"
+                      value={formData.accent_color}
+                      onChange={handleInputChange}
+                      fullWidth
+                      required
+                      sx={{
+                        '& input': {
+                          height: 40,
+                          cursor: 'pointer'
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          accent_color: '#E53935'
+                        });
+                      }}
+                      sx={{ mt: 1 }}
+                    >
+                      Reset
+                    </Button>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                    App accent color (requires page refresh to fully apply)
+                  </Typography>
+                </Box>
               </Grid>
             </Grid>
           </Box>
@@ -296,7 +325,7 @@ function SettingsPage() {
       <Card sx={{ mb: 4, backgroundColor: 'background.paper' }}>
         <CardHeader title="Spoolman Integration" />
         <CardContent>
-          <Box component="form" onSubmit={handleSubmit}>
+          <Box>
             <Grid container spacing={3}>
               <Grid item xs={12}>
                 <FormControlLabel
@@ -326,15 +355,7 @@ function SettingsPage() {
                   />
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    type="submit"
-                    disabled={saving || formData.spoolman_sync_enabled !== 'true'}
-                    sx={{ mt: 1 }}
-                  >
-                    {saving ? <CircularProgress size={24} /> : 'Save Settings'}
-                  </Button>
+                  {/* Save button moved to the top of the page */}
                 </Grid>
               </Grid>
               

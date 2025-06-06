@@ -22,6 +22,10 @@ function TopBar() {
   const getPageTitle = () => {
     switch (location.pathname) {
       case '/':
+        return 'Home';
+      case '/quick-cost':
+        return 'Quick Cost';
+      case '/quotes':
         return 'Quotes';
       case '/filaments':
         return 'Filament Management';
@@ -33,8 +37,6 @@ function TopBar() {
         return 'Settings';
       case '/quote/new':
         return 'New Quote';
-      case '/quote/quick':
-        return 'Quick Quote';
       default:
         if (location.pathname.startsWith('/quote/')) {
           return 'View Quote';

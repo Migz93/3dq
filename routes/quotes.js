@@ -66,7 +66,6 @@ router.post('/', (req, res) => {
       markup_percent,
       discount_percent,
       total_cost,
-      is_quick_quote,
       filaments,
       hardware,
       print_setup,
@@ -84,8 +83,8 @@ router.post('/', (req, res) => {
       const quoteStmt = db.prepare(`
         INSERT INTO quotes (
           quote_number, title, customer_name, date, notes, 
-          markup_percent, discount_percent, total_cost, is_quick_quote
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          markup_percent, discount_percent, total_cost
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
       const quoteInfo = quoteStmt.run(
@@ -96,8 +95,7 @@ router.post('/', (req, res) => {
         notes || null,
         markup_percent,
         discount_percent || 0,
-        total_cost,
-        is_quick_quote || 0
+        total_cost
       );
       
       const quoteId = quoteInfo.lastInsertRowid;
@@ -204,7 +202,6 @@ router.put('/:id', (req, res) => {
       markup_percent,
       discount_percent,
       total_cost,
-      is_quick_quote,
       filaments,
       hardware,
       print_setup,
@@ -234,7 +231,6 @@ router.put('/:id', (req, res) => {
           markup_percent = ?,
           discount_percent = ?,
           total_cost = ?,
-          is_quick_quote = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `);
@@ -247,7 +243,6 @@ router.put('/:id', (req, res) => {
         markup_percent,
         discount_percent || 0,
         total_cost,
-        is_quick_quote || 0,
         req.params.id
       );
       
@@ -404,8 +399,8 @@ router.post('/quick', (req, res) => {
     const quoteStmt = db.prepare(`
       INSERT INTO quotes (
         quote_number, title, customer_name, date, notes, 
-        markup_percent, discount_percent, total_cost, is_quick_quote
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        markup_percent, discount_percent, total_cost
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     const quoteInfo = quoteStmt.run(
@@ -416,8 +411,7 @@ router.post('/quick', (req, res) => {
       notes || null,
       markup_percent || 0,
       discount_percent || 0,
-      total_cost,
-      1 // is_quick_quote parameter
+      total_cost
     );
     
     const quoteId = quoteInfo.lastInsertRowid;
@@ -458,9 +452,11 @@ router.post('/quick', (req, res) => {
       const currencySetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('currency_symbol');
       const companyNameSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('company_name');
       const labourRateSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('labour_rate_per_hour');
+      const accentColorSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('accent_color');
       const currencySymbol = currencySetting ? currencySetting.value : '$';
       const companyName = companyNameSetting ? companyNameSetting.value : 'Prints Inc';
       const globalLabourRate = labourRateSetting ? parseFloat(labourRateSetting.value) : 0;
+      const accentColor = accentColorSetting ? accentColorSetting.value : '#E53935';
 
       // Helper function to format currency
       const formatCurrency = (value) => {
@@ -504,16 +500,16 @@ router.post('/quick', (req, res) => {
               .header { text-align: left; margin-bottom: 20px; }
               .header h1 { margin: 0; font-size: 2em; color: #333; }
               .header h2 { margin: 0; font-size: 1.2em; color: #555; }
-              .blue-divider { height: 2px; background-color: #3498db; margin: 20px 0; }
+              .blue-divider { height: 2px; background-color: ${accentColor}; margin: 20px 0; }
               .info-section table { width: 100%; border-collapse: collapse; }
               .info-section td { padding: 5px 0; font-size: 0.9em; }
               .description-section table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-              .description-section th { background-color: #e6f2ff; color: #333; font-size: 1.2em; padding: 10px; text-align: left; border: 1px solid #b3d9ff; }
-              .description-section td { padding: 8px 10px; border: 1px solid #b3d9ff; font-size: 0.9em; }
+              .description-section th { background-color: ${accentColor}25; color: #333; font-size: 1.2em; padding: 10px; text-align: left; border: 1px solid ${accentColor}50; }
+              .description-section td { padding: 8px 10px; border: 1px solid ${accentColor}50; font-size: 0.9em; }
               .pricing-section { text-align: right; margin-top: 20px; }
               .pricing-section p { margin: 5px 0; font-size: 1em; }
               .pricing-section .total { font-size: 1.2em; font-weight: bold; }
-              .print-button { position: fixed; top: 20px; right: 20px; padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 1000; font-family: Arial, sans-serif; font-size: 14px; display: block !important; }
+              .print-button { position: fixed; top: 20px; right: 20px; padding: 10px 15px; background-color: ${accentColor}; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 1000; font-family: Arial, sans-serif; font-size: 14px; display: block !important; }
               
               @page { margin: 1cm; } /* Removed size: auto */
 
@@ -529,11 +525,11 @@ router.post('/quick', (req, res) => {
                   max-width: 100% !important;
                 }
                 .print-button { display: none !important; }
-                .blue-divider { background-color: #3498db !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .blue-divider { background-color: ${accentColor} !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 /* Table border fix for client invoice */
                 .description-section table { border-collapse: separate !important; border-spacing: 0 !important; width: 100% !important; }
-                .description-section th, .description-section td { border: 1px solid #b3d9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                .description-section th { background-color: #e6f2ff !important; color: #333 !important; /* Ensure background prints */ }
+                .description-section th, .description-section td { border: 1px solid ${accentColor}50 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .description-section th { background-color: ${accentColor}25 !important; color: #333 !important; /* Ensure background prints */ }
               }
             </style>
           </head>
@@ -607,16 +603,16 @@ router.post('/quick', (req, res) => {
               .header { text-align: center; margin-bottom: 5px; } 
               .header h1 { margin: 0; font-size: 1.8em; color: #333; } 
               .header h2 { margin: 0; font-size: 1.1em; color: #555; } 
-              .blue-divider { height: 2px; background-color: #3498db; margin: 5px 0; } 
+              .blue-divider { height: 2px; background-color: ${accentColor}; margin: 5px 0; } 
               .info-section table, .costs-section table, .summary-section table { width: 100%; border-collapse: collapse; margin-bottom: 12px; } 
               .info-section td, .summary-section td { padding: 2px 0; font-size: 0.8em; } 
-              .costs-section th { background-color: #e6f2ff; color: #333; font-size: 1.0em; padding: 8px; text-align: left; border: 1px solid #b3d9ff; } 
-              .costs-section td { padding: 6px 8px; font-size: 0.8em; border: 1px solid #b3d9ff; } 
-              .costs-section .sub-header td { background-color: #f0f0f0; font-weight: bold; padding: 6px 8px; border: 1px solid #ccc; font-size: 0.9em; } 
+              .costs-section th { background-color: ${accentColor}25; color: #333; font-size: 1.0em; padding: 8px; text-align: left; border: 1px solid ${accentColor}50; }
+              .costs-section td { padding: 6px 8px; font-size: 0.8em; border: 1px solid ${accentColor}50; } 
+              .costs-section .sub-header td { background-color: ${accentColor}10; font-weight: bold; padding: 6px 8px; border: 1px solid ${accentColor}50; font-size: 0.9em; } 
               .summary-section { text-align: right; margin-top: 5px; } 
               .summary-section p { margin: 4px 0; font-size: 0.9em; } 
               .summary-section .total { font-size: 1.1em; font-weight: bold; } 
-              .print-button { position: fixed; top: 20px; right: 20px; padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 1000; font-family: Arial, sans-serif; font-size: 14px; display: block !important; }
+              .print-button { position: fixed; top: 20px; right: 20px; padding: 10px 15px; background-color: ${accentColor}; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 1000; font-family: Arial, sans-serif; font-size: 14px; display: block !important; }
 
               @page { margin: 1cm; } /* Removed size: auto */
 
@@ -632,11 +628,11 @@ router.post('/quick', (req, res) => {
                   max-width: 100% !important;
                 }
                 .print-button { display: none !important; }
-                .blue-divider { background-color: #3498db !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .blue-divider { background-color: ${accentColor} !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 .costs-section table { border-collapse: separate !important; border-spacing: 0 !important; width: 100% !important; }
-                .costs-section th, .costs-section td { border: 1px solid #b3d9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                .costs-section th { background-color: #e6f2ff !important; color: #333 !important; /* Ensure background prints */ }
-                .costs-section .sub-header td { border: 1px solid #ccc !important; background-color: #f0f0f0 !important; color: #333 !important; /* Ensure background prints */ }
+                .costs-section th, .costs-section td { border: 1px solid ${accentColor}50 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .costs-section th { background-color: ${accentColor}25 !important; color: #333 !important; /* Ensure background prints */ }
+                .costs-section .sub-header td { border: 1px solid ${accentColor}50 !important; background-color: ${accentColor}10 !important; color: #333 !important; /* Ensure background prints */ }
               }
             </style>
           </head>

@@ -27,8 +27,8 @@ module.exports = (db) => {
       const quoteStmt = db.prepare(`
         INSERT INTO quotes (
           quote_number, title, customer_name, date, notes, 
-          markup_percent, discount_percent, total_cost, is_quick_quote
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          markup_percent, discount_percent, total_cost
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
       const quoteInfo = quoteStmt.run(
@@ -39,8 +39,7 @@ module.exports = (db) => {
         notes || null,
         markup_percent || 0,
         discount_percent || 0,
-        total_cost,
-        1 // is_quick_quote parameter
+        total_cost
       );
       
       const quoteId = quoteInfo.lastInsertRowid;

@@ -93,6 +93,7 @@ function JobInfo({ formData, handleInputChange, isEditMode }) {
               value={formData.title}
               onChange={handleInputChange}
               fullWidth
+              required
               placeholder="Name of the 3D model"
             />
           </Grid>

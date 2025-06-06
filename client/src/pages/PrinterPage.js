@@ -21,14 +21,18 @@ import {
   TextField,
   InputAdornment,
   Tabs,
-  Tab
+  Tab,
+  Popover
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Archive as ArchiveIcon,
-  Unarchive as UnarchiveIcon
+  Unarchive as UnarchiveIcon,
+  FilterList as FilterIcon,
+  ArrowUpward as ArrowUpIcon,
+  ArrowDownward as ArrowDownIcon
 } from '@mui/icons-material';
 import SettingsContext from '../context/SettingsContext';
 
@@ -40,6 +44,14 @@ function PrinterPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentPrinter, setCurrentPrinter] = useState(null);
   const [tabValue, setTabValue] = useState(0);
+  
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  
+  // Filtering state
+  const [filterConfig, setFilterConfig] = useState({});
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+  const [currentFilterColumn, setCurrentFilterColumn] = useState(null);
   
   const { settings } = useContext(SettingsContext);
 
@@ -247,11 +259,84 @@ function PrinterPage() {
     );
   }
 
-  // Filter printers based on active tab
+  // Sort function
+  const sortedData = (data) => {
+    if (sortConfig.key) {
+      return [...data].sort((a, b) => {
+        // Handle numeric fields
+        if (['price', 'depreciation_time', 'service_cost', 'power_usage', 'depreciation_per_hour', 'material_diameter'].includes(sortConfig.key)) {
+          if (sortConfig.direction === 'asc') {
+            return parseFloat(a[sortConfig.key]) - parseFloat(b[sortConfig.key]);
+          }
+          return parseFloat(b[sortConfig.key]) - parseFloat(a[sortConfig.key]);
+        }
+        
+        // Handle string fields
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return data;
+  };
+  
+  // Request sort handler
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  // Filter handlers
+  const handleFilterClick = (event, column) => {
+    setCurrentFilterColumn(column);
+    setFilterAnchorEl(event.currentTarget);
+  };
+  
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+  
+  const handleFilterChange = (event) => {
+    const { value } = event.target;
+    setFilterConfig(prev => ({
+      ...prev,
+      [currentFilterColumn]: value
+    }));
+  };
+  
+  const handleFilterClear = () => {
+    setFilterConfig(prev => {
+      const newConfig = { ...prev };
+      delete newConfig[currentFilterColumn];
+      return newConfig;
+    });
+    handleFilterClose();
+  };
+  
+  // Filter printers based on active tab and filter config
   const filteredPrinters = printers.filter(printer => {
-    if (tabValue === 0) return printer.status === 'Active';
-    return printer.status === 'Archived';
+    // First filter by tab (active/archived)
+    if (tabValue === 0 && printer.status !== 'Active') return false;
+    if (tabValue === 1 && printer.status !== 'Archived') return false;
+    
+    // Then apply column filters
+    return Object.entries(filterConfig).every(([key, value]) => {
+      if (!value) return true;
+      
+      const itemValue = String(printer[key]).toLowerCase();
+      return itemValue.includes(value.toLowerCase());
+    });
   });
+  
+  // Apply sorting to filtered data
+  const sortedPrinters = sortedData(filteredPrinters);
 
   return (
     <Box>
@@ -275,7 +360,7 @@ function PrinterPage() {
         </Tabs>
       </Box>
 
-      {filteredPrinters.length === 0 ? (
+      {sortedPrinters.length === 0 ? (
         <Card sx={{ mb: 4, backgroundColor: 'background.paper' }}>
           <CardContent>
             <Typography variant="h6" align="center" sx={{ py: 4 }}>
@@ -301,18 +386,102 @@ function PrinterPage() {
           <Table sx={{ minWidth: 650 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Material Diameter</TableCell>
-                <TableCell>Price</TableCell>
-                <TableCell>Depreciation Time</TableCell>
-                <TableCell>Service Cost</TableCell>
-                <TableCell>Power Usage</TableCell>
-                <TableCell>Depr./Hour</TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('name')}>
+                      Name
+                      {sortConfig.key === 'name' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'name')}>
+                      <FilterIcon fontSize="small" color={filterConfig.name ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('material_diameter')}>
+                      Material Diameter
+                      {sortConfig.key === 'material_diameter' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'material_diameter')}>
+                      <FilterIcon fontSize="small" color={filterConfig.material_diameter ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('price')}>
+                      Price
+                      {sortConfig.key === 'price' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'price')}>
+                      <FilterIcon fontSize="small" color={filterConfig.price ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('depreciation_time')}>
+                      Depreciation Time
+                      {sortConfig.key === 'depreciation_time' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'depreciation_time')}>
+                      <FilterIcon fontSize="small" color={filterConfig.depreciation_time ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('service_cost')}>
+                      Service Cost
+                      {sortConfig.key === 'service_cost' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'service_cost')}>
+                      <FilterIcon fontSize="small" color={filterConfig.service_cost ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('power_usage')}>
+                      Power Usage
+                      {sortConfig.key === 'power_usage' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'power_usage')}>
+                      <FilterIcon fontSize="small" color={filterConfig.power_usage ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('depreciation_per_hour')}>
+                      Depr./Hour
+                      {sortConfig.key === 'depreciation_per_hour' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'depreciation_per_hour')}>
+                      <FilterIcon fontSize="small" color={filterConfig.depreciation_per_hour ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredPrinters.map((printer) => (
+              {sortedPrinters.map((printer) => (
                 <TableRow key={printer.id}>
                   <TableCell sx={{ maxWidth: { xs: '80px', sm: '200px' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {printer.name}
@@ -484,6 +653,36 @@ function PrinterPage() {
           <Button onClick={handleDeletePrinter} color="error">Delete</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Filter Popover */}
+      <Popover
+        open={Boolean(filterAnchorEl)}
+        anchorEl={filterAnchorEl}
+        onClose={handleFilterClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1, minWidth: 200 }}>
+          <TextField
+            label={`Filter by ${currentFilterColumn}`}
+            value={filterConfig[currentFilterColumn] || ''}
+            onChange={handleFilterChange}
+            variant="outlined"
+            size="small"
+            autoFocus
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+            <Button size="small" onClick={handleFilterClear} color="error">
+              Clear
+            </Button>
+            <Button size="small" onClick={handleFilterClose} variant="contained">
+              Apply
+            </Button>
+          </Box>
+        </Box>
+      </Popover>
     </Box>
   );
 }

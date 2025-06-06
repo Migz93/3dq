@@ -157,10 +157,12 @@ function QuickCost() { // Renamed from QuickQuote
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ color: settings.accent_color || '#3498db' }}>
-        Quick Cost Calculator
-      </Typography>
+    <Box>
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h4" component="h1">
+          Quick Cost
+        </Typography>
+      </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -271,7 +273,7 @@ function QuickCost() { // Renamed from QuickQuote
                     Printer Depreciation: {settings.currency_symbol}{quoteResult.depreciation_cost.toFixed(2)}
                   </Typography>
                   <Divider sx={{ my: 1 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: settings.accent_color || '#3498db' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: settings.accent_color || '#E53935' }}>
                     Total Direct Cost: {settings.currency_symbol}{quoteResult.total_direct_cost.toFixed(2)}
                   </Typography>
                 </Paper>

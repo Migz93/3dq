@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import DynamicLogo from '../logo/DynamicLogo';
 import {
   Box,
   Drawer,
@@ -16,12 +17,13 @@ import {
 } from '@mui/material';
 
 import {
-  Dashboard as DashboardIcon,
-  Inventory as InventoryIcon,
+  Description as DescriptionIcon,
+  Palette as PaletteIcon,
   Print as PrintIcon,
   Hardware as HardwareIcon,
   Settings as SettingsIcon,
-  FlashOn as FlashOnIcon
+  FlashOn as FlashOnIcon,
+  Home as HomeIcon
 } from '@mui/icons-material';
 import SettingsContext from '../../context/SettingsContext';
 import SidebarContext from '../../context/SidebarContext';
@@ -40,18 +42,23 @@ function Sidebar() {
   // Define sidebar menu items
   const menuItems = [
     {
+      text: 'Home',
+      icon: <HomeIcon />,
+      path: '/'
+    },
+    {
       text: 'Quick Cost',
       icon: <FlashOnIcon />,
       path: '/quick-cost'
     },
     {
       text: 'Quotes',
-      icon: <DashboardIcon />,
-      path: '/'
+      icon: <DescriptionIcon />,
+      path: '/quotes'
     },
     {
-      text: 'Filament',
-      icon: <InventoryIcon />,
+      text: 'Filaments',
+      icon: <PaletteIcon />,
       path: '/filaments'
     },
     {
@@ -82,25 +89,21 @@ function Sidebar() {
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
-          backgroundColor: '#1e1e1e',
-          borderRight: '1px solid rgba(255, 255, 255, 0.12)',
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-          }),
+          backgroundColor: 'background.paper',
+          borderRight: '1px solid',
+          borderColor: 'divider'
         },
       }}
       ModalProps={{
         keepMounted: true, // Better open performance on mobile
       }}
     >
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography variant="h5" component="div" sx={{ fontWeight: 'bold', color: settings.accent_color || '#3498db' }}>
-          3DQ
-        </Typography>
-      </Box>
-      <Divider />
-      <List>
+      <Box sx={{ overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <DynamicLogo height="40px" />
+        </Box>
+        <Divider />
+        <List>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
@@ -109,9 +112,9 @@ function Sidebar() {
               selected={location.pathname === item.path}
               sx={{
                 '&.Mui-selected': {
-                  backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                  backgroundColor: 'rgba(229, 57, 53, 0.2)',
                   '&:hover': {
-                    backgroundColor: 'rgba(52, 152, 219, 0.3)',
+                    backgroundColor: 'rgba(229, 57, 53, 0.3)',
                   },
                 },
                 '&:hover': {
@@ -119,14 +122,15 @@ function Sidebar() {
                 },
               }}
             >
-              <ListItemIcon sx={{ color: location.pathname === item.path ? settings.accent_color || '#3498db' : 'inherit' }}>
+              <ListItemIcon sx={{ color: location.pathname === item.path ? settings.accent_color || '#E53935' : 'inherit' }}>
                 {item.icon}
               </ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItemButton>
           </ListItem>
         ))}
-      </List>
+        </List>
+      </Box>
     </Drawer>
   );
 }

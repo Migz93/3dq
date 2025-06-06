@@ -27,14 +27,19 @@ import {
   Tabs,
   Tab,
   Tooltip,
-  Alert
+  Alert,
+  Popover
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Archive as ArchiveIcon,
-  Unarchive as UnarchiveIcon
+  Unarchive as UnarchiveIcon,
+  FilterList as FilterIcon,
+  ArrowUpward as ArrowUpIcon,
+  ArrowDownward as ArrowDownIcon,
+  Palette as PaletteIcon
 } from '@mui/icons-material';
 import SettingsContext from '../context/SettingsContext';
 
@@ -49,6 +54,14 @@ function FilamentPage() {
   const [tabValue, setTabValue] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null);
+  
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  
+  // Filtering state
+  const [filterConfig, setFilterConfig] = useState({});
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+  const [currentFilterColumn, setCurrentFilterColumn] = useState(null);
   
   const { settings } = useContext(SettingsContext);
 
@@ -321,16 +334,89 @@ function FilamentPage() {
     );
   }
 
-  // Filter filaments based on active tab
+  // Sort function
+  const sortedData = (data) => {
+    if (sortConfig.key) {
+      return [...data].sort((a, b) => {
+        // Handle numeric fields
+        if (['price_per_kg', 'spool_price', 'spool_weight', 'diameter'].includes(sortConfig.key)) {
+          if (sortConfig.direction === 'asc') {
+            return parseFloat(a[sortConfig.key]) - parseFloat(b[sortConfig.key]);
+          }
+          return parseFloat(b[sortConfig.key]) - parseFloat(a[sortConfig.key]);
+        }
+        
+        // Handle string fields
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return data;
+  };
+  
+  // Request sort handler
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  // Filter handlers
+  const handleFilterClick = (event, column) => {
+    setCurrentFilterColumn(column);
+    setFilterAnchorEl(event.currentTarget);
+  };
+  
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+  
+  const handleFilterChange = (event) => {
+    const { value } = event.target;
+    setFilterConfig(prev => ({
+      ...prev,
+      [currentFilterColumn]: value
+    }));
+  };
+  
+  const handleFilterClear = () => {
+    setFilterConfig(prev => {
+      const newConfig = { ...prev };
+      delete newConfig[currentFilterColumn];
+      return newConfig;
+    });
+    handleFilterClose();
+  };
+  
+  // Filter filaments based on active tab and filter config
   const filteredFilaments = filaments.filter(filament => {
-    if (tabValue === 0) return filament.status === 'Active';
-    return filament.status === 'Archived';
+    // First filter by tab (active/archived)
+    if (tabValue === 0 && filament.status !== 'Active') return false;
+    if (tabValue === 1 && filament.status !== 'Archived') return false;
+    
+    // Then apply column filters
+    return Object.entries(filterConfig).every(([key, value]) => {
+      if (!value) return true;
+      
+      const itemValue = String(filament[key]).toLowerCase();
+      return itemValue.includes(value.toLowerCase());
+    });
   });
+  
+  // Apply sorting to filtered data
+  const sortedFilaments = sortedData(filteredFilaments);
 
   return (
     <Box>
       <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           Filament Management
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
@@ -372,7 +458,7 @@ function FilamentPage() {
         </Tabs>
       </Box>
 
-      {filteredFilaments.length === 0 ? (
+      {sortedFilaments.length === 0 ? (
         <Card sx={{ mb: 4, backgroundColor: 'background.paper' }}>
           <CardContent>
             <Typography variant="h6" align="center" sx={{ py: 4 }}>
@@ -398,18 +484,92 @@ function FilamentPage() {
           <Table sx={{ minWidth: 650 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Color</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Diameter</TableCell>
-                <TableCell>Spool Weight</TableCell>
-                <TableCell>Spool Price</TableCell>
-                <TableCell>Price/kg</TableCell>
+                <TableCell>
+                  Color
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('name')}>
+                      Name
+                      {sortConfig.key === 'name' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'name')}>
+                      <FilterIcon fontSize="small" color={filterConfig.name ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('type')}>
+                      Type
+                      {sortConfig.key === 'type' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'type')}>
+                      <FilterIcon fontSize="small" color={filterConfig.type ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('diameter')}>
+                      Diameter
+                      {sortConfig.key === 'diameter' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'diameter')}>
+                      <FilterIcon fontSize="small" color={filterConfig.diameter ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('spool_weight')}>
+                      Spool Weight
+                      {sortConfig.key === 'spool_weight' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'spool_weight')}>
+                      <FilterIcon fontSize="small" color={filterConfig.spool_weight ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('spool_price')}>
+                      Spool Price
+                      {sortConfig.key === 'spool_price' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'spool_price')}>
+                      <FilterIcon fontSize="small" color={filterConfig.spool_price ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('price_per_kg')}>
+                      Price/kg
+                      {sortConfig.key === 'price_per_kg' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'price_per_kg')}>
+                      <FilterIcon fontSize="small" color={filterConfig.price_per_kg ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredFilaments.map((filament) => (
+              {sortedFilaments.map((filament) => (
                 <TableRow key={filament.id}>
                   <TableCell>
                     <Box 
@@ -634,24 +794,53 @@ function FilamentPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleCloseDeleteDialog}
-      >
-        <DialogTitle>Delete Filament</DialogTitle>
+      <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
-          <Typography>
-            Are you sure you want to delete the filament "{currentFilament?.name}"? This action cannot be undone.
-          </Typography>
-          <Typography sx={{ mt: 2, color: 'warning.main' }}>
-            Note: You cannot delete a filament that is used in any quotes. Consider archiving it instead.
-          </Typography>
+          <Typography>Are you sure you want to delete this filament?</Typography>
+          {currentFilament && (
+            <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+              Note: This will permanently delete "{currentFilament.name}" from the database.
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
-          <Button onClick={handleDeleteFilament} color="error">Delete</Button>
+          <Button onClick={handleDeleteFilament} color="error" variant="contained">
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
+      
+      {/* Filter Popover */}
+      <Popover
+        open={Boolean(filterAnchorEl)}
+        anchorEl={filterAnchorEl}
+        onClose={handleFilterClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1, minWidth: 200 }}>
+          <TextField
+            label={`Filter by ${currentFilterColumn}`}
+            value={filterConfig[currentFilterColumn] || ''}
+            onChange={handleFilterChange}
+            variant="outlined"
+            size="small"
+            autoFocus
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+            <Button size="small" onClick={handleFilterClear} color="error">
+              Clear
+            </Button>
+            <Button size="small" onClick={handleFilterClose} variant="contained">
+              Apply
+            </Button>
+          </Box>
+        </Box>
+      </Popover>
       
       {/* Spoolman Warning Dialog */}
       <Dialog

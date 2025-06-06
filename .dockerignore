@@ -1,0 +1,54 @@
+# Node modules
+node_modules
+client/node_modules
+
+# Build artifacts
+client/build
+
+# Git files
+.git
+.gitignore
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editor directories and files
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+coverage
+.nyc_output
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Github assets folder
+assets/**
+
+# Documentation
+*.md
+!README.md
+
+# Config backups
+config/backups
+
+# Temporary files
+tmp
+temp

@@ -10,6 +10,7 @@ import Sidebar from './components/layout/Sidebar';
 import TopBar from './components/layout/TopBar';
 
 // Page components
+import HomePage from './pages/HomePage';
 import Dashboard from './pages/Dashboard';
 import FilamentPage from './pages/FilamentPage';
 import PrinterPage from './pages/PrinterPage';
@@ -30,7 +31,7 @@ function App() {
     default_markup_percent: 50,
     currency_symbol: '£',
     quote_prefix: '3DQ',
-    accent_color: '#3498db'
+    accent_color: '#E53935'
   });
 
   // Create theme with dark mode and accent color from settings
@@ -38,7 +39,7 @@ function App() {
     palette: {
       mode: 'dark',
       primary: {
-        main: settings.accent_color || '#3498db',
+        main: settings.accent_color || '#E53935',
       },
       secondary: {
         main: '#f50057',
@@ -101,7 +102,8 @@ function App() {
               <TopBar />
               <Box sx={{ p: 3, flexGrow: 1 }}>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/quotes" element={<Dashboard />} />
                   <Route path="/filaments" element={<FilamentPage />} />
                   <Route path="/printers" element={<PrinterPage />} />
                   <Route path="/hardware" element={<HardwarePage />} />

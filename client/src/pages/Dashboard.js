@@ -19,14 +19,19 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle
+  DialogTitle,
+  TextField,
+  Popover
 } from '@mui/material';
 import {
   Add as AddIcon,
   Visibility as VisibilityIcon,
   FileCopy as FileCopyIcon,
   Delete as DeleteIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  FilterList as FilterIcon,
+  ArrowUpward as ArrowUpIcon,
+  ArrowDownward as ArrowDownIcon
 } from '@mui/icons-material';
 import SettingsContext from '../context/SettingsContext';
 
@@ -36,6 +41,14 @@ function Dashboard() {
   const [error, setError] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quoteToDelete, setQuoteToDelete] = useState(null);
+  
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  
+  // Filtering state
+  const [filterConfig, setFilterConfig] = useState({});
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+  const [currentFilterColumn, setCurrentFilterColumn] = useState(null);
   
   const { settings } = useContext(SettingsContext);
 
@@ -132,6 +145,80 @@ function Dashboard() {
     );
   }
 
+  // Sort function
+  const sortedData = (data) => {
+    if (sortConfig.key) {
+      return [...data].sort((a, b) => {
+        // Handle numeric fields
+        if (['total_cost'].includes(sortConfig.key)) {
+          if (sortConfig.direction === 'asc') {
+            return parseFloat(a[sortConfig.key]) - parseFloat(b[sortConfig.key]);
+          }
+          return parseFloat(b[sortConfig.key]) - parseFloat(a[sortConfig.key]);
+        }
+        
+        // Handle string fields
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return data;
+  };
+  
+  // Request sort handler
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  // Filter handlers
+  const handleFilterClick = (event, column) => {
+    setCurrentFilterColumn(column);
+    setFilterAnchorEl(event.currentTarget);
+  };
+  
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+  
+  const handleFilterChange = (event) => {
+    const { value } = event.target;
+    setFilterConfig(prev => ({
+      ...prev,
+      [currentFilterColumn]: value
+    }));
+  };
+  
+  const handleFilterClear = () => {
+    setFilterConfig(prev => {
+      const newConfig = { ...prev };
+      delete newConfig[currentFilterColumn];
+      return newConfig;
+    });
+    handleFilterClose();
+  };
+  
+  // Filter quotes based on filter config
+  const filteredQuotes = quotes.filter(quote => {
+    return Object.entries(filterConfig).every(([key, value]) => {
+      if (!value) return true;
+      
+      const itemValue = String(quote[key]).toLowerCase();
+      return itemValue.includes(value.toLowerCase());
+    });
+  });
+  
+  // Apply sorting to filtered data
+  const sortedQuotes = sortedData(filteredQuotes);
+  
   return (
     <Box>
       <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -148,7 +235,7 @@ function Dashboard() {
         </Button>
       </Box>
 
-      {quotes.length === 0 ? (
+      {sortedQuotes.length === 0 ? (
         <Card sx={{ mb: 4, backgroundColor: 'background.paper' }}>
           <CardContent>
             <Typography variant="h6" align="center" sx={{ py: 4 }}>
@@ -171,16 +258,76 @@ function Dashboard() {
           <Table sx={{ minWidth: 650 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Quote #</TableCell>
-                <TableCell>Title</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell align="right">Total</TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('quote_number')}>
+                      Quote #
+                      {sortConfig.key === 'quote_number' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'quote_number')}>
+                      <FilterIcon fontSize="small" color={filterConfig.quote_number ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('title')}>
+                      Title
+                      {sortConfig.key === 'title' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'title')}>
+                      <FilterIcon fontSize="small" color={filterConfig.title ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('customer_name')}>
+                      Customer
+                      {sortConfig.key === 'customer_name' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'customer_name')}>
+                      <FilterIcon fontSize="small" color={filterConfig.customer_name ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('date')}>
+                      Date
+                      {sortConfig.key === 'date' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'date')}>
+                      <FilterIcon fontSize="small" color={filterConfig.date ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+                <TableCell align="right">
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    <Box sx={{ cursor: 'pointer' }} onClick={() => requestSort('total_cost')}>
+                      Total
+                      {sortConfig.key === 'total_cost' && (
+                        sortConfig.direction === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={(e) => handleFilterClick(e, 'total_cost')}>
+                      <FilterIcon fontSize="small" color={filterConfig.total_cost ? 'primary' : 'inherit'} />
+                    </IconButton>
+                  </Box>
+                </TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {quotes.map((quote) => (
+              {sortedQuotes.map((quote) => (
                 <TableRow key={quote.id}>
                   <TableCell>{quote.quote_number}</TableCell>
                   <TableCell sx={{ maxWidth: { xs: '80px', sm: '200px' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{quote.title}</TableCell>
@@ -236,18 +383,52 @@ function Dashboard() {
       <Dialog
         open={deleteDialogOpen}
         onClose={closeDeleteDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
       >
-        <DialogTitle>Delete Quote</DialogTitle>
+        <DialogTitle id="alert-dialog-title">Delete Quote</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete the quote "{quoteToDelete?.title}"? This action cannot be undone.
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to delete this quote? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeDeleteDialog}>Cancel</Button>
-          <Button onClick={handleDeleteQuote} color="error">Delete</Button>
+          <Button onClick={handleDeleteQuote} color="error" autoFocus>
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
+      
+      {/* Filter Popover */}
+      <Popover
+        open={Boolean(filterAnchorEl)}
+        anchorEl={filterAnchorEl}
+        onClose={handleFilterClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1, minWidth: 200 }}>
+          <TextField
+            label={`Filter by ${currentFilterColumn}`}
+            value={filterConfig[currentFilterColumn] || ''}
+            onChange={handleFilterChange}
+            variant="outlined"
+            size="small"
+            autoFocus
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+            <Button size="small" onClick={handleFilterClear} color="error">
+              Clear
+            </Button>
+            <Button size="small" onClick={handleFilterClose} variant="contained">
+              Apply
+            </Button>
+          </Box>
+        </Box>
+      </Popover>
     </Box>
   );
 }
