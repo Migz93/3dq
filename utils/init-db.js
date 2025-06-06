@@ -165,7 +165,8 @@ function initDb() {
     { key: 'accent_color', value: '#E53935' },
     { key: 'company_name', value: 'Prints Inc' },
     { key: 'spoolman_sync_enabled', value: 'false' },
-    { key: 'spoolman_url', value: 'http://localhost:7912' }
+    { key: 'spoolman_url', value: 'http://localhost:7912' },
+    { key: 'tax_rate', value: '0' }
   ];
 
   const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');

@@ -22,6 +22,7 @@ function CostSummary({
   discount = 0
 }) {
   const { settings } = useContext(SettingsContext);
+  const tax_rate = parseFloat(settings.tax_rate) || 0;
   
   // We no longer need to initialize markup here as it's handled in JobInfo component
 
@@ -39,7 +40,9 @@ function CostSummary({
   const markupAmount = subtotal * (markup / 100);
   const afterMarkup = subtotal + markupAmount;
   const discountAmount = afterMarkup * (discount / 100);
-  const calculatedTotal = afterMarkup - discountAmount;
+  const afterDiscount = afterMarkup - discountAmount;
+  const taxAmount = tax_rate > 0 ? afterDiscount * (tax_rate / 100) : 0;
+  const calculatedTotal = afterDiscount + taxAmount;
 
   // Update total cost when any component changes
   useEffect(() => {
@@ -183,6 +186,24 @@ function CostSummary({
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="subtitle1">Discount ({discount}%):</Typography>
               <Typography variant="subtitle1" color="error">-{currencySymbol}{discountAmount.toFixed(2)}</Typography>
+            </Box>
+          </>
+        )}
+        
+        {/* After Discount - only show if there is a discount */}
+        {discount > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, pt: 1, borderTop: '1px dashed rgba(0, 0, 0, 0.12)' }}>
+            <Typography variant="subtitle1" fontWeight="medium">After Discount:</Typography>
+            <Typography variant="subtitle1" fontWeight="medium">{currencySymbol}{afterDiscount.toFixed(2)}</Typography>
+          </Box>
+        )}
+        
+        {/* Tax - only show if tax rate is greater than 0 */}
+        {tax_rate > 0 && (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="subtitle1">Tax ({tax_rate}%):</Typography>
+              <Typography variant="subtitle1">+{currencySymbol}{taxAmount.toFixed(2)}</Typography>
             </Box>
           </>
         )}

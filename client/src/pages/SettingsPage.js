@@ -29,7 +29,8 @@ function SettingsPage() {
     accent_color: '',
     company_name: '',
     spoolman_sync_enabled: 'false',
-    spoolman_url: 'http://localhost:7912'
+    spoolman_url: 'http://localhost:7912',
+    tax_rate: '0'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,7 +49,8 @@ function SettingsPage() {
         accent_color: settings.accent_color || '#E53935',
         company_name: settings.company_name || 'Prints Inc',
         spoolman_sync_enabled: settings.spoolman_sync_enabled || 'false',
-        spoolman_url: settings.spoolman_url || 'http://localhost:7912'
+        spoolman_url: settings.spoolman_url || 'http://localhost:7912',
+        tax_rate: settings.tax_rate || '0'
       });
       setLoading(false);
     }
@@ -227,7 +229,7 @@ function SettingsPage() {
                   InputProps={{
                     startAdornment: formData.currency_symbol ? (
                       <InputAdornment position="start">{formData.currency_symbol}</InputAdornment>
-                    ) : null,
+                    ) : null
                   }}
                   helperText="Hourly rate used to calculate labour costs"
                 />
@@ -245,6 +247,20 @@ function SettingsPage() {
                     endAdornment: <InputAdornment position="end">%</InputAdornment>,
                   }}
                   helperText="Default markup percentage applied to quotes"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  name="tax_rate"
+                  label="Tax Rate"
+                  type="number"
+                  value={formData.tax_rate}
+                  onChange={handleInputChange}
+                  fullWidth
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                  }}
+                  helperText="Tax rate applied to quotes and invoices (0 = no tax)"
                 />
               </Grid>
               <Grid item xs={12} sm={6}>

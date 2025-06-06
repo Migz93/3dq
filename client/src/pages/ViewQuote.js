@@ -149,18 +149,24 @@ function ViewQuote() {
   }
 
   // Calculate totals
-  const filamentTotal = quote.filaments?.reduce((sum, f) => sum + f.total_cost, 0) || 0;
-  const hardwareTotal = quote.hardware?.reduce((sum, h) => sum + h.total_cost, 0) || 0;
-  const powerCost = quote.print_setup?.power_cost || 0;
-  const depreciationCost = quote.print_setup?.depreciation_cost || 0;
-  const labourCost = quote.labour?.total_cost || 0;
-
-  const totalDirectCost = filamentTotal + hardwareTotal + powerCost + depreciationCost; // Hardware moved to Direct Costs
-  // totalIndirectCost is no longer needed as a separate sum for display
-  const subtotal = totalDirectCost + labourCost; // Subtotal is now Direct Costs + Labour
+  const filamentTotal = quote.filaments ? quote.filaments.reduce((sum, f) => sum + f.total_cost, 0) : 0;
+  const hardwareTotal = quote.hardware ? quote.hardware.reduce((sum, h) => sum + h.total_cost, 0) : 0;
+  const powerCost = quote.print_setup ? quote.print_setup.power_cost : 0;
+  const depreciationCost = quote.print_setup ? quote.print_setup.depreciation_cost : 0;
+  const labourCost = quote.labour ? quote.labour.total_cost : 0;
+  
+  // Calculate subtotals
+  const totalDirectCost = filamentTotal + hardwareTotal;
+  const subtotal = totalDirectCost + powerCost + depreciationCost + labourCost;
   const markup = subtotal * (quote.markup_percent / 100);
   const afterMarkup = subtotal + markup;
-  const discount = afterMarkup * ((quote.discount_percent || 0) / 100);
+  const discount = afterMarkup * (quote.discount_percent / 100);
+  const afterDiscount = afterMarkup - discount;
+  
+  // Calculate tax if tax rate is greater than 0
+  const taxRate = parseFloat(settings.tax_rate) || 0;
+  const taxAmount = taxRate > 0 ? afterDiscount * (taxRate / 100) : 0;
+  const finalTotal = afterDiscount + taxAmount;
 
   const formatPrintTime = (totalMinutes) => {
     if (totalMinutes === null || totalMinutes === undefined || totalMinutes === 0) {
@@ -432,8 +438,11 @@ function ViewQuote() {
             {quote.discount_percent > 0 && (
               <Typography variant="body2" sx={{ color: 'error.main' }}>Discount ({quote.discount_percent}%): -{settings.currency_symbol}{discount.toFixed(2)}</Typography>
             )}
+            {taxRate > 0 && (
+              <Typography variant="body2">Tax ({taxRate}%): +{settings.currency_symbol}{taxAmount.toFixed(2)}</Typography>
+            )}
             <Divider sx={{ my: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Final Price: {settings.currency_symbol}{(afterMarkup - discount).toFixed(2)}</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Final Price: {settings.currency_symbol}{finalTotal.toFixed(2)}</Typography>
           </Paper>
         </Grid>
       </Grid>

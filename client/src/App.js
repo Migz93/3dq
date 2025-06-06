@@ -31,7 +31,8 @@ function App() {
     default_markup_percent: 50,
     currency_symbol: '£',
     quote_prefix: '3DQ',
-    accent_color: '#E53935'
+    accent_color: '#E53935',
+    tax_rate: 0
   });
 
   // Create theme with dark mode and accent color from settings

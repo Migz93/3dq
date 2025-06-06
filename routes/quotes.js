@@ -448,14 +448,13 @@ router.post('/quick', (req, res) => {
       const printSetup = db.prepare('SELECT * FROM quote_print_setup WHERE quote_id = ?').get(id);
       const labour = db.prepare('SELECT * FROM quote_labour WHERE quote_id = ?').get(id);
 
-      // Fetch settings
-      const currencySetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('currency_symbol');
-      const companyNameSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('company_name');
+      // Get settings
+      const currencySymbol = db.prepare('SELECT value FROM settings WHERE key = ?').get('currency_symbol')?.value || '£';
+      const companyName = db.prepare('SELECT value FROM settings WHERE key = ?').get('company_name')?.value || 'Prints Inc';
+      const taxRate = parseFloat(db.prepare('SELECT value FROM settings WHERE key = ?').get('tax_rate')?.value || '0');
       const labourRateSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('labour_rate_per_hour');
-      const accentColorSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('accent_color');
-      const currencySymbol = currencySetting ? currencySetting.value : '$';
-      const companyName = companyNameSetting ? companyNameSetting.value : 'Prints Inc';
       const globalLabourRate = labourRateSetting ? parseFloat(labourRateSetting.value) : 0;
+      const accentColorSetting = db.prepare('SELECT value FROM settings WHERE key = ?').get('accent_color');
       const accentColor = accentColorSetting ? accentColorSetting.value : '#E53935';
 
       // Helper function to format currency
@@ -478,14 +477,16 @@ router.post('/quick', (req, res) => {
         // Calculate totals for client invoice
         const filamentTotal = filaments.reduce((sum, item) => sum + item.total_cost, 0);
         const hardwareTotal = hardware.reduce((sum, item) => sum + item.total_cost, 0);
-        const printingCosts = printSetup ? (printSetup.power_cost + printSetup.depreciation_cost) : 0;
-        const labourTotal = labour ? labour.total_cost : 0;
-        
-        const subtotalPreMarkup = filamentTotal + hardwareTotal + printingCosts + labourTotal;
+        const printSetupCosts = printSetup ? (printSetup.power_cost + printSetup.depreciation_cost) : 0;
+        const labourTotalCost = labour ? labour.total_cost : 0;
+
+        const subtotalPreMarkup = filamentTotal + hardwareTotal + printSetupCosts + labourTotalCost;
         const markupAmount = subtotalPreMarkup * (quote.markup_percent / 100);
         const subtotalPostMarkup = subtotalPreMarkup + markupAmount;
         const discountAmount = quote.discount_percent ? (subtotalPostMarkup * (quote.discount_percent / 100)) : 0;
-        const finalTotal = subtotalPostMarkup - discountAmount;
+        const afterDiscount = subtotalPostMarkup - discountAmount;
+        const taxAmount = taxRate > 0 ? (afterDiscount * (taxRate / 100)) : 0;
+        const finalTotal = afterDiscount + taxAmount;
 
         html = `
           <!DOCTYPE html>
@@ -571,6 +572,8 @@ router.post('/quick', (req, res) => {
                 ${quote.discount_percent && quote.discount_percent > 0 ? 
                   `<p>Subtotal: ${formatCurrency(subtotalPostMarkup)}</p>
                    <p>Discount (${quote.discount_percent}%): -${formatCurrency(discountAmount)}</p>` : ''}
+                ${taxRate > 0 ? 
+                  `<p>Tax (${taxRate}%): ${formatCurrency(taxAmount)}</p>` : ''}
                 <p class="total">Total: ${formatCurrency(finalTotal)}</p>
               </div>
             </div>
@@ -588,7 +591,9 @@ router.post('/quick', (req, res) => {
         const markupAmount = subtotalPreMarkup * (quote.markup_percent / 100);
         const subtotalPostMarkup = subtotalPreMarkup + markupAmount;
         const discountAmount = quote.discount_percent ? (subtotalPostMarkup * (quote.discount_percent / 100)) : 0;
-        const finalTotal = subtotalPostMarkup - discountAmount;
+        const afterDiscount = subtotalPostMarkup - discountAmount;
+        const taxAmount = taxRate > 0 ? (afterDiscount * (taxRate / 100)) : 0;
+        const finalTotal = afterDiscount + taxAmount;
 
         html = `
           <!DOCTYPE html>
@@ -715,6 +720,10 @@ router.post('/quick', (req, res) => {
                 <p>Subtotal (After Markup): ${formatCurrency(subtotalPostMarkup)}</p>
                 ${quote.discount_percent && quote.discount_percent > 0 ? 
                   `<p>Discount (${quote.discount_percent}%): -${formatCurrency(discountAmount)}</p>` : ''}
+                ${quote.discount_percent && quote.discount_percent > 0 ? 
+                  `<p>After Discount: ${formatCurrency(afterDiscount)}</p>` : ''}
+                ${taxRate > 0 ? 
+                  `<p>Tax (${taxRate}%): +${formatCurrency(taxAmount)}</p>` : ''}
                 <p class="total">Final Total: ${formatCurrency(finalTotal)}</p>
               </div>
 

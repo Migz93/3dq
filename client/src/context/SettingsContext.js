@@ -8,7 +8,8 @@ const SettingsContext = createContext({
     currency_symbol: '£',
     quote_prefix: '3DQ',
     accent_color: '#E53935',
-    company_name: 'Prints Inc'
+    company_name: 'Prints Inc',
+    tax_rate: 0
   },
   setSettings: () => {}
 });
