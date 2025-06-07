@@ -19,7 +19,8 @@ function CostSummary({
   totalCost,
   setTotalCost,
   currencySymbol,
-  discount = 0
+  discount = 0,
+  quantity = 1
 }) {
   const { settings } = useContext(SettingsContext);
   const tax_rate = parseFloat(settings.tax_rate) || 0;
@@ -36,7 +37,13 @@ function CostSummary({
   const materialCostsTotal = filamentTotal + hardwareTotal + powerCost + depreciationCost;
   const serviceCostsTotal = labourCost;
   
-  const subtotal = materialCostsTotal + serviceCostsTotal;
+  // Calculate per-unit subtotal
+  const perUnitSubtotal = materialCostsTotal + serviceCostsTotal;
+  
+  // Apply quantity to get total subtotal
+  const subtotal = perUnitSubtotal * quantity;
+  
+  // Apply markup, discount, and tax to the total subtotal
   const markupAmount = subtotal * (markup / 100);
   const afterMarkup = subtotal + markupAmount;
   const discountAmount = afterMarkup * (discount / 100);
@@ -162,9 +169,25 @@ function CostSummary({
           Price Breakdown
         </Typography>
         
+        {/* Per Unit Subtotal - only show if quantity > 1 */}
+        {quantity > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="subtitle1">Per Unit Subtotal:</Typography>
+            <Typography variant="subtitle1">{currencySymbol}{perUnitSubtotal.toFixed(2)}</Typography>
+          </Box>
+        )}
+        
+        {/* Quantity - only show if quantity > 1 */}
+        {quantity > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="subtitle1">Quantity:</Typography>
+            <Typography variant="subtitle1">× {quantity}</Typography>
+          </Box>
+        )}
+        
         {/* Base Subtotal */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="subtitle1">Base Subtotal:</Typography>
+          <Typography variant="subtitle1">{quantity > 1 ? 'Total Subtotal:' : 'Base Subtotal:'}</Typography>
           <Typography variant="subtitle1">{currencySymbol}{subtotal.toFixed(2)}</Typography>
         </Box>
         

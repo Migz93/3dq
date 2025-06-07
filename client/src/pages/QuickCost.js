@@ -256,7 +256,7 @@ function QuickCost() { // Renamed from QuickQuote
         {quoteResult && (
           <Grid item xs={12} md={12} sx={{ mt: 3 }}> {/* Retain top margin */}
             <Card>
-              <CardHeader title="Estimated Direct Costs" />
+              <CardHeader title="Estimated Production Costs" />
               <CardContent>
                 <Paper elevation={2} sx={{ p: 2, mb: 2, backgroundColor: 'background.default' }}>
                   <Typography variant="h6" gutterBottom>Cost Breakdown</Typography>
@@ -274,7 +274,7 @@ function QuickCost() { // Renamed from QuickQuote
                   </Typography>
                   <Divider sx={{ my: 1 }} />
                   <Typography variant="h6" sx={{ fontWeight: 'bold', color: settings.accent_color || '#E53935' }}>
-                    Total Direct Cost: {settings.currency_symbol}{quoteResult.total_direct_cost.toFixed(2)}
+                    Total Production Cost: {settings.currency_symbol}{quoteResult.total_direct_cost.toFixed(2)}
                   </Typography>
                 </Paper>
               </CardContent>

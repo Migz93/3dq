@@ -40,7 +40,7 @@ docker run -d \
   -p 6123:6123 \
   -v ~/3dq-data:/config \
   -e CONFIG_DIR=/config \
-  miguel1993/3dq:latest
+  ghcr.io/migz93/3dq:latest
 ```
 
 Then access the application at http://localhost:6123
@@ -54,7 +54,7 @@ version: '3'
 
 services:
   3dq:
-    image: miguel1993/3dq:latest
+    image: ghcr.io/migz93/3dq:latest
     container_name: 3dq
     ports:
       - "6123:6123"

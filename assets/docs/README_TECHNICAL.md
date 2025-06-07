@@ -272,10 +272,12 @@ Check the server logs for detailed error messages. Most API errors will be logge
 
 ## Recent Updates
 
-### Discount Feature
+### Recent Schema Changes
+
+- Added `quantity` column to the quotes table (default value: 1)
 - Added `discount_percent` column to the quotes table
-- Implemented discount calculation in the quote builder and view quote pages
-- Updated invoice templates to display subtotal, discount, and final total
+- Implemented quantity and discount calculations in the quote builder and view quote pages
+- Updated invoice templates to display quantity, per-unit costs, subtotal, discount, and final total
 
 ## Database Schema and API Reference
 
@@ -400,6 +402,7 @@ CREATE TABLE IF NOT EXISTS quotes (
   total_cost REAL NOT NULL,
   is_quick_quote BOOLEAN NOT NULL DEFAULT 0,
   discount_percent REAL DEFAULT 0,
+  quantity INTEGER NOT NULL DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
@@ -464,3 +467,90 @@ CREATE TABLE IF NOT EXISTS quote_labour (
   FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE
 )
 ```
+
+#### Schema Migrations Table
+```sql
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  version INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+```
+
+## Database Migration System
+
+3DQ includes a database migration system that allows for seamless schema changes between application versions without requiring users to wipe their databases.
+
+### How It Works
+
+The migration system tracks the current database schema version in a `schema_migrations` table and applies any pending migrations in sequential order when the application starts. Each migration is a JavaScript file that defines the changes to be made to the database schema.
+
+### Migration Files
+
+Migration files are stored in the `/utils/migrations` directory and follow a specific naming convention:
+
+```
+<version>_<name>.js
+```
+
+Where:
+- `<version>` is a sequential number (e.g., 001, 002, 003)
+- `<name>` is a descriptive name using underscores (e.g., add_quantity_to_quotes)
+
+Each migration file exports two functions:
+- `up`: Contains the SQL statements to apply the migration
+- `down`: (Optional) Contains the SQL statements to roll back the migration
+
+Example migration file:
+
+```javascript
+/**
+ * Migration: Add quantity to quotes
+ * Version: 1
+ * Created: 2025-06-07T15:30:00.000Z
+ */
+
+exports.up = function(db) {
+  db.exec(`
+    ALTER TABLE quotes
+    ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1
+  `);
+};
+
+exports.down = function(db) {
+  // SQLite doesn't support dropping columns directly
+  console.log('SQLite does not support dropping columns directly');
+};
+```
+
+### Creating Migrations
+
+To create a new migration, use the provided utility script:
+
+```bash
+node utils/create-migration.js "Add column to table"
+```
+
+This will create a new migration file with the appropriate version number and template code.
+
+### When to Use Migrations
+
+Use the migration system whenever you need to make changes to the database schema, such as:
+
+1. Adding new tables
+2. Adding columns to existing tables
+3. Modifying column types or constraints
+4. Adding indexes or foreign keys
+5. Updating default values
+6. Migrating data between tables
+
+### How Migrations Are Applied
+
+When the 3DQ server starts, it:
+
+1. Checks the current database schema version
+2. Scans the migrations directory for available migrations
+3. Applies any migrations with a version higher than the current schema version
+4. Records each applied migration in the `schema_migrations` table
+
+This ensures that each migration is applied exactly once and in the correct order.

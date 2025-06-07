@@ -4,6 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const Database = require('better-sqlite3');
 const fs = require('fs');
+const MigrationManager = require('./utils/migration-manager');
 require('dotenv').config();
 
 // Initialize Express app
@@ -76,6 +77,21 @@ if (needsInit) {
 
 // Open database connection
 const db = new Database(dbPath);
+
+// Run database migrations
+const migrationManager = new MigrationManager(db);
+(async () => {
+  try {
+    console.log('Checking for database migrations...');
+    const migrationsApplied = await migrationManager.runMigrations();
+    if (migrationsApplied > 0) {
+      console.log(`Applied ${migrationsApplied} database migrations`);
+    }
+  } catch (error) {
+    console.error('Error applying migrations:', error);
+    process.exit(1); // Exit if migrations fail
+  }
+})();
 
 // Import routes
 const createFilamentRoutes = require('./routes/filaments');

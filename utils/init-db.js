@@ -90,6 +90,7 @@ function initDb() {
       markup_percent REAL NOT NULL,
       total_cost REAL NOT NULL,
       discount_percent REAL DEFAULT 0,
+      quantity INTEGER DEFAULT 1,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
@@ -290,12 +291,13 @@ function initDb() {
       notes: 'Lightbox designed on makerworld.',
       markup_percent: 75.0,
       total_cost: 21.625268,
-      discount_percent: 5.0
+      discount_percent: 5.0,
+      quantity: 1
     };
 
     // Insert example quote
     const insertQuote = db.prepare(
-      'INSERT INTO quotes (quote_number, title, customer_name, date, notes, markup_percent, total_cost, discount_percent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO quotes (quote_number, title, customer_name, date, notes, markup_percent, total_cost, discount_percent, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     
     const quoteId = insertQuote.run(
@@ -306,7 +308,8 @@ function initDb() {
       exampleQuote.notes,
       exampleQuote.markup_percent,
       exampleQuote.total_cost,
-      exampleQuote.discount_percent
+      exampleQuote.discount_percent,
+      exampleQuote.quantity
     ).lastInsertRowid;
     
     // Insert example quote filament

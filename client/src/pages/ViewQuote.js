@@ -148,16 +148,26 @@ function ViewQuote() {
     );
   }
 
-  // Calculate totals
+  // Get quantity (default to 1 if not set)
+  const quantity = quote.quantity || 1;
+
+  // Calculate per-unit totals
   const filamentTotal = quote.filaments ? quote.filaments.reduce((sum, f) => sum + f.total_cost, 0) : 0;
   const hardwareTotal = quote.hardware ? quote.hardware.reduce((sum, h) => sum + h.total_cost, 0) : 0;
   const powerCost = quote.print_setup ? quote.print_setup.power_cost : 0;
   const depreciationCost = quote.print_setup ? quote.print_setup.depreciation_cost : 0;
   const labourCost = quote.labour ? quote.labour.total_cost : 0;
   
-  // Calculate subtotals
-  const totalDirectCost = filamentTotal + hardwareTotal;
-  const subtotal = totalDirectCost + powerCost + depreciationCost + labourCost;
+  // Calculate per-unit production cost (excluding labour)
+  const perUnitProductionCost = filamentTotal + hardwareTotal + powerCost + depreciationCost;
+  // Calculate per-unit subtotal (including labour)
+  const perUnitSubtotal = perUnitProductionCost + labourCost;
+  
+  // Apply quantity to get total subtotal
+  const totalProductionCost = perUnitProductionCost * quantity;
+  const subtotal = perUnitSubtotal * quantity;
+  
+  // Apply markup, discount on the total subtotal
   const markup = subtotal * (quote.markup_percent / 100);
   const afterMarkup = subtotal + markup;
   const discount = afterMarkup * (quote.discount_percent / 100);
@@ -233,6 +243,8 @@ function ViewQuote() {
             <Typography variant="subtitle1">Date</Typography>
             <Typography variant="body1" sx={{ mb: 2 }}>{quote.date}</Typography>
             
+            <Typography variant="subtitle1">Quantity</Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>{quantity}</Typography>
           </Grid>
           {quote.notes && (
             <Grid item xs={12}>
@@ -423,7 +435,7 @@ function ViewQuote() {
             <Typography variant="body2">Filament: {settings.currency_symbol}{filamentTotal.toFixed(2)}</Typography>
             <Typography variant="body2">Hardware: {settings.currency_symbol}{hardwareTotal.toFixed(2)}</Typography>
             <Typography variant="body2">Power: {settings.currency_symbol}{powerCost.toFixed(2)}</Typography>
-            <Typography variant="body2">Depreciation: {settings.currency_symbol}{depreciationCost.toFixed(2)}</Typography>
+            <Typography variant="body2">Printer Depreciation: {settings.currency_symbol}{depreciationCost.toFixed(2)}</Typography>
             <Typography variant="body2">Labour: {settings.currency_symbol}{labourCost.toFixed(2)}</Typography>
           </Paper>
         </Grid>
@@ -432,8 +444,13 @@ function ViewQuote() {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, backgroundColor: 'background.paper', height: '100%' }}> {/* Added height 100% for equal height if desired */}
             <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Financial Summary</Typography>
-            <Typography variant="body2">Production Cost: {settings.currency_symbol}{totalDirectCost.toFixed(2)}</Typography>
-            <Typography variant="body2">Subtotal (All Costs): {settings.currency_symbol}{subtotal.toFixed(2)}</Typography>
+            {quantity > 1 && (
+              <>
+                <Typography variant="body2">Per Unit Production Cost: {settings.currency_symbol}{perUnitProductionCost.toFixed(2)}</Typography>
+                <Typography variant="body2">Per Unit Subtotal: {settings.currency_symbol}{perUnitSubtotal.toFixed(2)}</Typography>
+              </>
+            )}
+            <Typography variant="body2">Total Subtotal (Qty {quantity}): {settings.currency_symbol}{subtotal.toFixed(2)}</Typography>
             <Typography variant="body2">Markup ({quote.markup_percent}%): +{settings.currency_symbol}{markup.toFixed(2)}</Typography>
             {quote.discount_percent > 0 && (
               <Typography variant="body2" sx={{ color: 'error.main' }}>Discount ({quote.discount_percent}%): -{settings.currency_symbol}{discount.toFixed(2)}</Typography>

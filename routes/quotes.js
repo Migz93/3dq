@@ -66,6 +66,7 @@ router.post('/', (req, res) => {
       markup_percent,
       discount_percent,
       total_cost,
+      quantity,
       filaments,
       hardware,
       print_setup,
@@ -83,8 +84,8 @@ router.post('/', (req, res) => {
       const quoteStmt = db.prepare(`
         INSERT INTO quotes (
           quote_number, title, customer_name, date, notes, 
-          markup_percent, discount_percent, total_cost
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          markup_percent, discount_percent, total_cost, quantity
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
       const quoteInfo = quoteStmt.run(
@@ -95,7 +96,8 @@ router.post('/', (req, res) => {
         notes || null,
         markup_percent,
         discount_percent || 0,
-        total_cost
+        total_cost,
+        quantity || 1
       );
       
       const quoteId = quoteInfo.lastInsertRowid;
@@ -205,7 +207,8 @@ router.put('/:id', (req, res) => {
       filaments,
       hardware,
       print_setup,
-      labour
+      labour,
+      quantity
     } = req.body;
     
     // Validate required fields
@@ -223,19 +226,22 @@ router.put('/:id', (req, res) => {
     db.transaction(() => {
       // Update quote
       const quoteStmt = db.prepare(`
-        UPDATE quotes SET
-          title = ?,
-          customer_name = ?,
-          date = ?,
-          notes = ?,
+        UPDATE quotes SET 
+          quote_number = ?, 
+          title = ?, 
+          customer_name = ?, 
+          date = ?, 
+          notes = ?, 
           markup_percent = ?,
           discount_percent = ?,
           total_cost = ?,
+          quantity = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `);
       
       quoteStmt.run(
+        existingQuote.quote_number,
         title || existingQuote.title,
         customer_name,
         date || existingQuote.date,
@@ -243,6 +249,7 @@ router.put('/:id', (req, res) => {
         markup_percent,
         discount_percent || 0,
         total_cost,
+        quantity || 1,
         req.params.id
       );
       
@@ -474,13 +481,22 @@ router.post('/quick', (req, res) => {
 
       // --- HTML Generation Logic --- 
       if (type === 'client') {
-        // Calculate totals for client invoice
+        // Get quantity (default to 1 if not set)
+        const quantity = quote.quantity || 1;
+        
+        // Calculate per-unit totals for client invoice
         const filamentTotal = filaments.reduce((sum, item) => sum + item.total_cost, 0);
         const hardwareTotal = hardware.reduce((sum, item) => sum + item.total_cost, 0);
         const printSetupCosts = printSetup ? (printSetup.power_cost + printSetup.depreciation_cost) : 0;
         const labourTotalCost = labour ? labour.total_cost : 0;
 
-        const subtotalPreMarkup = filamentTotal + hardwareTotal + printSetupCosts + labourTotalCost;
+        // Calculate per-unit subtotal
+        const perUnitSubtotalPreMarkup = filamentTotal + hardwareTotal + printSetupCosts + labourTotalCost;
+        
+        // Apply quantity to get total subtotal
+        const subtotalPreMarkup = perUnitSubtotalPreMarkup * quantity;
+        
+        // Apply markup, discount, and tax on the total
         const markupAmount = subtotalPreMarkup * (quote.markup_percent / 100);
         const subtotalPostMarkup = subtotalPreMarkup + markupAmount;
         const discountAmount = quote.discount_percent ? (subtotalPostMarkup * (quote.discount_percent / 100)) : 0;
@@ -550,6 +566,7 @@ router.post('/quick', (req, res) => {
                   </tr>
                   <tr>
                     <td><strong>Model:</strong> ${quote.title}</td>
+                    <td style="text-align: right;"><strong>Quantity:</strong> ${quantity}</td>
                   </tr>
                 </table>
               </div>
@@ -582,12 +599,26 @@ router.post('/quick', (req, res) => {
         `;
       } else if (type === 'internal') {
         // --- Internal Invoice HTML Generation Logic ---
+        // Get quantity (default to 1 if not set)
+        const quantity = quote.quantity || 1;
+        
+        // Calculate per-unit totals
         const filamentTotal = filaments.reduce((sum, item) => sum + item.total_cost, 0);
         const hardwareTotal = hardware.reduce((sum, item) => sum + item.total_cost, 0);
-        const printSetupCosts = printSetup ? (printSetup.power_cost + printSetup.depreciation_cost) : 0;
+        const powerCost = printSetup ? printSetup.power_cost : 0;
+        const depreciationCost = printSetup ? printSetup.depreciation_cost : 0;
+        const printSetupCosts = powerCost + depreciationCost;
         const labourTotalCost = labour ? labour.total_cost : 0;
 
-        const subtotalPreMarkup = filamentTotal + hardwareTotal + printSetupCosts + labourTotalCost;
+        // Calculate per-unit production cost (excluding labour)
+        const perUnitProductionCost = filamentTotal + hardwareTotal + powerCost + depreciationCost;
+        // Calculate per-unit subtotal (including labour)
+        const perUnitSubtotalPreMarkup = perUnitProductionCost + labourTotalCost;
+        
+        // Apply quantity to get total subtotal
+        const subtotalPreMarkup = perUnitSubtotalPreMarkup * quantity;
+        
+        // Apply markup, discount, and tax on the total
         const markupAmount = subtotalPreMarkup * (quote.markup_percent / 100);
         const subtotalPostMarkup = subtotalPreMarkup + markupAmount;
         const discountAmount = quote.discount_percent ? (subtotalPostMarkup * (quote.discount_percent / 100)) : 0;
@@ -657,6 +688,7 @@ router.post('/quick', (req, res) => {
                   </tr>
                   <tr>
                     <td><strong>Model:</strong> ${quote.title}</td>
+                    <td style="text-align: right;"><strong>Quantity:</strong> ${quantity}</td>
                   </tr>
                 </table>
               </div>
@@ -715,7 +747,11 @@ router.post('/quick', (req, res) => {
 
               <div class="blue-divider"></div>
               <div class="summary-section">
-                <p>Subtotal (Before Markup): ${formatCurrency(subtotalPreMarkup)}</p>
+                ${quantity > 1 ? `
+                <p>Per Unit Production Cost: ${formatCurrency(perUnitProductionCost)}</p>
+                <p>Per Unit Subtotal: ${formatCurrency(perUnitSubtotalPreMarkup)}</p>
+                ` : ''}
+                <p>Total Subtotal (Qty ${quantity}): ${formatCurrency(subtotalPreMarkup)}</p>
                 <p>Markup (${quote.markup_percent}%): +${formatCurrency(markupAmount)}</p>
                 <p>Subtotal (After Markup): ${formatCurrency(subtotalPostMarkup)}</p>
                 ${quote.discount_percent && quote.discount_percent > 0 ? 

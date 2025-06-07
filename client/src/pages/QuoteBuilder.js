@@ -55,7 +55,8 @@ function QuoteBuilder() {
     date: new Date().toISOString().split('T')[0],
     notes: '',
     markup: 0,
-    discount: 0
+    discount: 0,
+    quantity: 1
   });
   
   const [quoteFilaments, setQuoteFilaments] = useState([]);
@@ -328,6 +329,7 @@ function QuoteBuilder() {
         notes: formData.notes,
         markup_percent: formData.markup,
         discount_percent: formData.discount,
+        quantity: formData.quantity,
         total_cost: totalCost,
         
         // Filament data
@@ -455,16 +457,17 @@ function QuoteBuilder() {
         );
       case 5:
         return (
-          <CostSummary 
+          <CostSummary
             quoteFilaments={quoteFilaments}
             quoteHardware={quoteHardware}
             printSetup={printSetup}
             labour={labour}
-            markup={formData.markup}
+            markup={parseFloat(formData.markup) || 0}
+            discount={parseFloat(formData.discount) || 0}
+            quantity={parseInt(formData.quantity) || 1}
             totalCost={totalCost}
             setTotalCost={setTotalCost}
-            currencySymbol={settings.currency_symbol}
-            discount={formData.discount}
+            currencySymbol={settings.currency_symbol || '$'}
           />
         );
       default:

@@ -55,7 +55,17 @@ function JobInfo({ formData, handleInputChange, isEditMode }) {
         }
       });
     }
-  }, [settings, formData.markup, handleInputChange]);
+    
+    // Initialize quantity to 1 if not set
+    if (!formData.quantity) {
+      handleInputChange({
+        target: {
+          name: 'quantity',
+          value: 1
+        }
+      });
+    }
+  }, [settings, formData.markup, formData.quantity, handleInputChange]);
   return (
     <Paper sx={{ p: 3, mb: 3, backgroundColor: 'background.paper' }}>
       <Typography variant="h6" gutterBottom>
@@ -156,6 +166,21 @@ function JobInfo({ formData, handleInputChange, isEditMode }) {
               InputProps={{
                 endAdornment: <InputAdornment position="end">%</InputAdornment>,
                 inputProps: { min: 0, max: 100 }
+              }}
+            />
+          </Grid>
+          
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="quantity"
+              label="Quantity"
+              type="number"
+              value={formData.quantity || 1}
+              onChange={handleInputChange}
+              fullWidth
+              required
+              InputProps={{
+                inputProps: { min: 1 }
               }}
             />
           </Grid>
