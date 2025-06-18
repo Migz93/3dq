@@ -168,7 +168,8 @@ function QuoteBuilder() {
           date: data.date,
           notes: data.notes || '',
           markup: data.markup_percent || 0,
-          discount: data.discount_percent || 0
+          discount: data.discount_percent || 0,
+          quantity: data.quantity || 1
         });
         
         // Populate filaments

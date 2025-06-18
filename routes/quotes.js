@@ -615,7 +615,8 @@ router.post('/quick', (req, res) => {
         // Calculate per-unit subtotal (including labour)
         const perUnitSubtotalPreMarkup = perUnitProductionCost + labourTotalCost;
         
-        // Apply quantity to get total subtotal
+        // Apply quantity to get total production cost and subtotal
+        const totalProductionCost = perUnitProductionCost * quantity;
         const subtotalPreMarkup = perUnitSubtotalPreMarkup * quantity;
         
         // Apply markup, discount, and tax on the total
@@ -747,6 +748,7 @@ router.post('/quick', (req, res) => {
 
               <div class="blue-divider"></div>
               <div class="summary-section">
+                <p>Production Cost: ${formatCurrency(totalProductionCost)}</p>
                 ${quantity > 1 ? `
                 <p>Per Unit Production Cost: ${formatCurrency(perUnitProductionCost)}</p>
                 <p>Per Unit Subtotal: ${formatCurrency(perUnitSubtotalPreMarkup)}</p>

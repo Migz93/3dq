@@ -163,7 +163,7 @@ function ViewQuote() {
   // Calculate per-unit subtotal (including labour)
   const perUnitSubtotal = perUnitProductionCost + labourCost;
   
-  // Apply quantity to get total subtotal
+  // Apply quantity to get total production cost and subtotal
   const totalProductionCost = perUnitProductionCost * quantity;
   const subtotal = perUnitSubtotal * quantity;
   
@@ -436,6 +436,7 @@ function ViewQuote() {
             <Typography variant="body2">Hardware: {settings.currency_symbol}{hardwareTotal.toFixed(2)}</Typography>
             <Typography variant="body2">Power: {settings.currency_symbol}{powerCost.toFixed(2)}</Typography>
             <Typography variant="body2">Printer Depreciation: {settings.currency_symbol}{depreciationCost.toFixed(2)}</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Production Cost: {settings.currency_symbol}{totalProductionCost.toFixed(2)}</Typography>
             <Typography variant="body2">Labour: {settings.currency_symbol}{labourCost.toFixed(2)}</Typography>
           </Paper>
         </Grid>
